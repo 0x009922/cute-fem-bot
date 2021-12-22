@@ -24,3 +24,6 @@ cute_fem_bot-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# App runtime config
+config.yml

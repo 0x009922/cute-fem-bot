@@ -5,11 +5,25 @@ defmodule CuteFemBot.Application do
 
   use Application
 
+  require Logger
+
   @impl true
   def start(_type, _args) do
+    cfg =
+      case CuteFemBot.Config.read_cfg() do
+        {:ok, cfg} ->
+          Logger.debug("Loaded config: #{inspect(cfg)}")
+          cfg
+
+        {:error, err} ->
+          Logger.emergency("Unable to read config: #{inspect(err)}")
+          System.stop(1)
+      end
+
     children = [
-      # Starts a worker by calling: CuteFemBot.Worker.start_link(arg)
-      # {CuteFemBot.Worker, arg}
+      {CuteFemBot.Config.State, [cfg]},
+      {CuteFemBot.Tg.Api.Supervisor, [cfg]},
+      {CuteFemBot.Tg.Watcher, [:long_polling, interval: 5_000]}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
