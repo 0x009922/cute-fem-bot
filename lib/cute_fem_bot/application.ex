@@ -22,8 +22,8 @@ defmodule CuteFemBot.Application do
 
     children = [
       {CuteFemBot.Config.State, [cfg]},
-      {CuteFemBot.Tg.Api.Supervisor, [cfg]},
-      {CuteFemBot.Tg.Watcher, [:long_polling, interval: 5_000]}
+      {CuteFemBot.Tg.Api.Supervisor, [cfg]}
+      # {CuteFemBot.Tg.Watcher, [:long_polling, interval: 5_000]}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

@@ -9,6 +9,7 @@ defmodule CuteFemBot.Config do
     @typedoc "CuteFemBot cfg"
 
     field(:api_token, String.t(), enforce: true)
+    field(:moderation_chat_id, integer(), enforce: true)
   end
 
   def read_cfg() do
@@ -22,11 +23,12 @@ defmodule CuteFemBot.Config do
         :ok,
         [
           %{
-            "api_token" => token
+            "api_token" => token,
+            "moderation_chat_id" => mod
           }
         ]
       } ->
-        {:ok, %__MODULE__{api_token: token}}
+        {:ok, %__MODULE__{api_token: token, moderation_chat_id: mod}}
 
       {:ok, _} ->
         {:error, "Bad config"}

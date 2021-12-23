@@ -22,8 +22,8 @@ defmodule CuteFemBot.Tg.Watcher.LongPolling.Poller do
     state =
       case Server.get_updates(%{"offset" => compute_offset(state.greatest_known_update_id)}) do
         {:ok, updates} ->
-          # todo handle updates sequentially
-          IO.inspect(updates)
+          {module, fun} = cfg.callback
+          apply(module, fun, [updates])
 
           if length(updates) > 0 do
             %Types.Update{update_id: id} = Enum.fetch!(updates, -1)
@@ -33,7 +33,7 @@ defmodule CuteFemBot.Tg.Watcher.LongPolling.Poller do
           end
 
         :error ->
-          Logger.info("Polling failed with an error")
+          Logger.warning("Polling failed with an error")
           state
       end
 

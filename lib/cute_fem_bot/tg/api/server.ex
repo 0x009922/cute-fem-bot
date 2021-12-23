@@ -2,9 +2,10 @@ defmodule CuteFemBot.Tg.Api.Server do
   use GenServer
 
   alias CuteFemBot.Tg.Api
+  alias __MODULE__, as: Self
 
   def start_link(%Api.Config{} = cfg) do
-    GenServer.start_link(__MODULE__, cfg, name: __MODULE__)
+    GenServer.start_link(Self, cfg, name: Self)
   end
 
   ## Callbacks
@@ -15,11 +16,11 @@ defmodule CuteFemBot.Tg.Api.Server do
   end
 
   @impl true
-  def handle_call({:get_updates, params}, _from, cfg) do
-    {:reply, Api.get_updates(cfg, params), cfg}
+  def handle_call({method, params}, _from, cfg) do
+    {:reply, apply(Api, method, [cfg, params]), cfg}
   end
 
-  def get_updates(params \\ nil) do
-    GenServer.call(__MODULE__, {:get_updates, params})
+  def call(method, params) do
+    GenServer.call(Self, {method, params})
   end
 end

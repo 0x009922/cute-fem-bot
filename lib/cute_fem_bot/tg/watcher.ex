@@ -15,7 +15,8 @@ defmodule CuteFemBot.Tg.Watcher do
   @impl true
   def init([:long_polling, interval: interval]) do
     children = [
-      {LongPolling, [%LongPolling.Config{interval: interval}]}
+      {LongPolling,
+       [%LongPolling.Config{interval: interval, callback: {CuteFemBot.Tg.Handler, :handle}}]}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

@@ -10,12 +10,19 @@ defmodule CuteFemBot.Tg.Api do
 
   def get_updates(%Config{} = cfg, body \\ nil) do
     case make_request(cfg, method_name: "getUpdates", body: body) do
-      {:ok, updates} -> {:ok, Enum.map(updates, &Types.Update.parse/1)}
-      x -> x
+      {:ok, updates} ->
+        {:ok, Enum.map(updates, &Types.Update.parse/1)}
+
+      x ->
+        x
     end
   end
 
-  defp make_request(%Config{} = cfg, opts) do
+  def send_photo(%Config{} = cfg, %Types.SendPhotoParams{} = params) do
+    make_request(cfg, method_name: "sendPhoto", body: Types.SendPhotoParams.to_json(params))
+  end
+
+  def make_request(%Config{} = cfg, opts) do
     method_name = Keyword.fetch!(opts, :method_name)
 
     body =

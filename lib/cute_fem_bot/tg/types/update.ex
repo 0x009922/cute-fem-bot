@@ -5,16 +5,17 @@ defmodule CuteFemBot.Tg.Types.Update do
 
   typedstruct do
     field(:update_id, non_neg_integer(), enforce: true)
-    field(:message, Message.t())
+    field(:value, {:message, Message.t()} | {:callback_query, any()} | :unknown)
   end
 
   def parse(%{} = raw) do
     %__MODULE__{
       update_id: Map.fetch!(raw, "update_id"),
-      message:
-        case Map.get(raw, "message") do
-          nil -> nil
-          x -> Message.parse(x)
+      value:
+        case raw do
+          %{"message" => msg} -> {:message, Message.parse(msg)}
+          %{"callback_query" => query} -> {:callback_query, query}
+          _ -> :unknown
         end
     }
   end
