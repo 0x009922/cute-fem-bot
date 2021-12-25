@@ -20,13 +20,15 @@ defmodule CuteFemBot.Tg.Watcher.LongPolling.Poller do
     Logger.debug("Polling...")
 
     state =
-      case Server.get_updates(%{"offset" => compute_offset(state.greatest_known_update_id)}) do
+      case Server.call(:get_updates, %{"offset" => compute_offset(state.greatest_known_update_id)}) do
         {:ok, updates} ->
-          {module, fun} = cfg.callback
-          apply(module, fun, [updates])
+          handle_updates(updates)
+          # IO.inspect(updates)
+          # {module, fun} = cfg.callback
+          # apply(module, fun, [updates])
 
           if length(updates) > 0 do
-            %Types.Update{update_id: id} = Enum.fetch!(updates, -1)
+            %{"update_id" => id} = Enum.fetch!(updates, -1)
             %State{state | greatest_known_update_id: id}
           else
             state
@@ -47,5 +49,15 @@ defmodule CuteFemBot.Tg.Watcher.LongPolling.Poller do
     # tell telegram to forget all previous updates
     # https://core.telegram.org/bots/api#getupdates
     num + 1
+  end
+
+  defp handle_updates(updates) do
+    Enum.each(updates, fn x -> IO.inspect(x, label: "update") end)
+    # Enum.each(updates, fn x ->
+    #   case x do
+    #     %{"message"}
+    #     _ -> nil
+    #   end
+    # end)
   end
 end

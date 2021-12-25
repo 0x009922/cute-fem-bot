@@ -9,13 +9,7 @@ defmodule CuteFemBot.Tg.Api do
   alias CuteFemBot.Tg.Types
 
   def get_updates(%Config{} = cfg, body \\ nil) do
-    case make_request(cfg, method_name: "getUpdates", body: body) do
-      {:ok, updates} ->
-        {:ok, Enum.map(updates, &Types.Update.parse/1)}
-
-      x ->
-        x
-    end
+    make_request(cfg, method_name: "getUpdates", body: body)
   end
 
   def send_photo(%Config{} = cfg, %Types.SendPhotoParams{} = params) do
