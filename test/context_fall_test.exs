@@ -1,4 +1,6 @@
 defmodule ContextFallTest do
+  use ExUnit.Case
+
   defmodule HandlerModA do
     def main() do
       [
@@ -31,5 +33,13 @@ defmodule ContextFallTest do
     def return_ctx(ctx) do
       {:halt, ctx}
     end
+  end
+
+  defp ctx_factory(gender, age) do
+    %{gender: gender, age: age}
+  end
+
+  test "male greeting for male gender" do
+    {:ok, %{ctx: %{}}}
   end
 end
