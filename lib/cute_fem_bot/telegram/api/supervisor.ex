@@ -12,14 +12,18 @@ defmodule CuteFemBot.Telegram.Api.Supervisor do
   @impl true
   def init([%CuteFemBot.Config{api_token: token}]) do
     children = [
-      {Finch, name: CuteFemBot.Telegram.Api.Finch},
-      {CuteFemBot.Telegram.Api,
-       [
-         %CuteFemBot.Telegram.Api.Context{
-           token: token,
-           finch: CuteFemBot.Tg.Api.Finch
-         }
-       ]}
+      {
+        Finch,
+        name: CuteFemBot.Telegram.Api.Finch
+      },
+      {
+        CuteFemBot.Telegram.Api,
+        name: CuteFemBot.Telegram.Api,
+        ctx: %CuteFemBot.Telegram.Api.Context{
+          token: token,
+          finch: CuteFemBot.Tg.Api.Finch
+        }
+      }
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

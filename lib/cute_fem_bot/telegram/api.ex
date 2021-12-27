@@ -3,22 +3,28 @@ defmodule CuteFemBot.Telegram.Api do
   require Logger
   alias CuteFemBot.Telegram.Api.Context
 
+  def start_link(opts) do
+    name = Keyword.fetch!(opts, :name)
+
+    ctx =
+      case Keyword.fetch!(opts, :ctx) do
+        %Context{} = ctx -> ctx
+      end
+
+    IO.puts("starting #{inspect(name)}")
+    GenServer.start_link(name, ctx)
+  end
+
   @impl true
   def init(%Context{} = ctx) do
+    IO.inspect("init")
+
     {:ok, ctx}
   end
 
   @impl true
   def handle_call({:make_request, opts}, _from, ctx) do
     {:reply, make_request(ctx, opts), ctx}
-  end
-
-  def request(api, opts) do
-    GenServer.call(api, {:make_request, opts})
-  end
-
-  def send_message(api, body) do
-    request(api, method_name: "sendMessage", body: body)
   end
 
   defp make_request(%Context{token: token, finch: finch}, opts) do
@@ -59,5 +65,15 @@ defmodule CuteFemBot.Telegram.Api do
             :error
         end
     end
+  end
+
+  # client api
+
+  def request(api, opts) do
+    GenServer.call(api, {:make_request, opts})
+  end
+
+  def send_message(api, body) do
+    request(api, method_name: "sendMessage", body: body)
   end
 end

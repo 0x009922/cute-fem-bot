@@ -2,38 +2,38 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
   alias CuteFemBot.Telegram.Api
   alias CuteFemBot.Persistence
 
-  def schema() do
-    %{
-      main: [
-        :find_message_sender,
-        :update_user_meta,
-        :moderation_or_suggestor
-      ]
-    }
+  def main() do
+    [
+      :find_message_sender,
+      :update_user_meta,
+      :moderation_or_suggestor
+    ]
   end
 
-  def find_message_sender(update, ctx) do
+  def find_message_sender(%{update: update} = ctx) do
     case update do
       %{"message" => %{"from" => %{"id" => user_id} = user, "chat" => %{"id" => chat_id}}} ->
         {
-          :next,
+          :cont,
           ctx: Map.put(ctx, :message_sender, %{user: user, user_id: user_id, chat_id: chat_id})
         }
 
       _ ->
-        :next
+        :cont
     end
   end
 
-  def update_user_meta(_update, %{persistence: persistence, message_sender: %{user: user}}) do
+  def update_user_meta(%{persistence: persistence, message_sender: %{user: user}}) do
     CuteFemBot.Persistence.update_user_meta(persistence, user)
-    :next
+    :cont
   end
 
-  def moderation_or_suggestor(_update, %{
-        message_sender: %{chat_id: cid},
-        config: %{moderation_chat_id: moderation_chat_id}
-      }) do
+  def moderation_or_suggestor(
+        %{
+          message_sender: %{chat_id: cid},
+          config: %{moderation_chat_id: moderation_chat_id}
+        } = ctx
+      ) do
     branch =
       if cid == moderation_chat_id do
         # moderation
@@ -43,6 +43,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
       else
         # suggestor
         [
+          :fetch_ban_list,
           :ignore_user_if_he_is_banned,
           :greet_user_if_start_command,
           :find_any_media,
@@ -50,10 +51,10 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
         ]
       end
 
-    {:next, sub_branch: branch}
+    {:cont, :sub_branch, branch, ctx}
   end
 
-  def empty_moderation_answer(_, %{api: api, config: %{moderation_chat_id: chat_id}}) do
+  def empty_moderation_answer(%{api: api, config: %{moderation_chat_id: chat_id}}) do
     Api.send_message(api, %{
       "chat_id" => chat_id,
       "text" => "Я не знаю, зачем вы мне прислали сообщение"
@@ -62,7 +63,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
     :halt
   end
 
-  def greet_user_if_start_command(update, ctx) do
+  def greet_user_if_start_command(%{update: update} = ctx) do
     case update do
       %{"message" => %{"text" => "/start"}} ->
         %{message_sender: %{user_id: uid}, telegram_api: api} = ctx
@@ -79,26 +80,28 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
         :halt
 
       _ ->
-        :next
+        :cont
     end
   end
 
-  def ignore_user_if_he_is_banned(update, %{
+  def fetch_ban_list(%{persistence: pers} = ctx) do
+    {:cont, Map.put(ctx, :banned_users, Persistence.get_ban_list(pers))}
+  end
+
+  def ignore_user_if_he_is_banned(%{
         message_sender: %{user_id: uid},
-        persistence: pers,
+        banned_users: banned_list,
         api: api
       }) do
-    banned_list = Persistence.get_ban_list(pers)
-
     if uid in banned_list do
       Api.send_message(api, %{"chat_id" => uid, "text" => "ты в бане"})
       :halt
     else
-      :next
+      :cont
     end
   end
 
-  def find_any_media(%{"message" => msg}, ctx) do
+  def find_any_media(%{update: %{"message" => msg}} = ctx) do
     media =
       case msg do
         %{"photo" => [%{"file_id" => file_id} | _]} ->
@@ -119,19 +122,20 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
       end
 
     case media do
-      :none -> :next
-      some -> {:next, ctx: Map.put(ctx, :message_media, some)}
+      :none -> :cont
+      some -> {:cont, Map.put(ctx, :message_media, some)}
     end
   end
 
-  def handle_media(update, ctx) do
-    %{
-      telegram_api: api,
-      persistence: pers,
-      message_sender: %{user_id: uid},
-      config: %{moderation_chat_id: moder_chat_id}
-    } = ctx
-
+  def handle_media(
+        %{
+          update: update,
+          telegram_api: api,
+          persistence: pers,
+          message_sender: %{user_id: uid},
+          config: %{moderation_chat_id: moder_chat_id}
+        } = ctx
+      ) do
     %{"message" => %{"message_id" => message_id}} = update
 
     case ctx do

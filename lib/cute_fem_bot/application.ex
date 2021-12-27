@@ -21,9 +21,10 @@ defmodule CuteFemBot.Application do
       end
 
     children = [
-      {CuteFemBot.Config.State, [cfg]},
-      {CuteFemBot.Telegram.Api.Supervisor, [cfg]},
-      {CuteFemBot.Telegram.Updater, [:long_polling, interval: 5_000, handler: nil]}
+      # {CuteFemBot.Config.State, [cfg]},
+      {CuteFemBot.Telegram.Api.Supervisor, [cfg]}
+      # {CuteFemBot.Telegram.Updater, [:long_polling, interval: 5_000, handler: nil]}
+      # {CuteFemBot.Logic.Handler, persistence: nil, telegram_api: nil}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
