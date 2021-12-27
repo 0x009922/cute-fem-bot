@@ -1,4 +1,4 @@
-defmodule CuteFemBot.Tg.Watcher.LongPolling.State do
+defmodule CuteFemBot.Telegram.Updater.LongPolling.State do
   use TypedStruct
 
   typedstruct do

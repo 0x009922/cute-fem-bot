@@ -1,4 +1,4 @@
-defmodule CuteFemBot.Tg.Watcher.LongPolling do
+defmodule CuteFemBot.Telegram.Updater.LongPolling do
   @moduledoc """
   It is a supervisable service that fetches updates from Telegram with Long-Polling approach
   """
@@ -7,7 +7,7 @@ defmodule CuteFemBot.Tg.Watcher.LongPolling do
 
   use Supervisor
 
-  alias CuteFemBot.Tg.Watcher.LongPolling
+  alias CuteFemBot.Telegram.Updater.LongPolling
   alias LongPolling.Config
   alias LongPolling.Poller
 

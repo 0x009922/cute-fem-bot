@@ -1,6 +1,6 @@
-defmodule CuteFemBot.Tg.Api.Config do
+defmodule CuteFemBot.Telegram.Api.Context do
   @moduledoc """
-  Special config for Api module
+  Context for api calls
   """
 
   use TypedStruct

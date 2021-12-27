@@ -1,22 +1,27 @@
-defmodule CuteFemBot.Tg.Api do
-  @moduledoc """
-  This module is a layer to call Telegram Bot APIs.
-  """
-
+defmodule CuteFemBot.Telegram.Api do
+  use GenServer
   require Logger
+  alias CuteFemBot.Telegram.Api.Context
 
-  alias CuteFemBot.Tg.Api.Config
-  alias CuteFemBot.Tg.Types
-
-  def get_updates(%Config{} = cfg, body \\ nil) do
-    make_request(cfg, method_name: "getUpdates", body: body)
+  @impl true
+  def init(%Context{} = ctx) do
+    {:ok, ctx}
   end
 
-  def send_photo(%Config{} = cfg, %Types.SendPhotoParams{} = params) do
-    make_request(cfg, method_name: "sendPhoto", body: Types.SendPhotoParams.to_json(params))
+  @impl true
+  def handle_call({:make_request, opts}, _from, ctx) do
+    {:reply, make_request(ctx, opts), ctx}
   end
 
-  def make_request(%Config{} = cfg, opts) do
+  def request(api, opts) do
+    GenServer.call(api, {:make_request, opts})
+  end
+
+  def send_message(api, body) do
+    request(api, method_name: "sendMessage", body: body)
+  end
+
+  defp make_request(%Context{token: token, finch: finch}, opts) do
     method_name = Keyword.fetch!(opts, :method_name)
 
     body =
@@ -30,12 +35,12 @@ defmodule CuteFemBot.Tg.Api do
 
     case Finch.Request.build(
            :post,
-           "https://api.telegram.org/bot#{cfg.token}/#{method_name}",
+           "https://api.telegram.org/bot#{token}/#{method_name}",
            %{"content-type" => "application/json"},
            body,
            []
          )
-         |> Finch.request(cfg.finch) do
+         |> Finch.request(finch) do
       {:error, err} ->
         Logger.error("Error occured while making request to Telegram: #{inspect(err)}")
         :error
