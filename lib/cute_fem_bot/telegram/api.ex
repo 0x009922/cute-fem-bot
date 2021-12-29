@@ -31,7 +31,7 @@ defmodule CuteFemBot.Telegram.Api do
 
     %CuteFemBot.Config{api_token: token} = CuteFemBot.Config.State.get(cfg)
 
-    Logger.debug("Making request to Telegram: #{method_name}")
+    Logger.debug("Making request to Telegram: #{method_name}; body: #{inspect(body)}")
 
     case Finch.Request.build(
            :post,
@@ -73,5 +73,19 @@ defmodule CuteFemBot.Telegram.Api do
 
   def send_message(api, body) do
     request(api, method_name: "sendMessage", body: body)
+  end
+
+  def delete_message(api, chat_id, message_id) do
+    request(api,
+      method_name: "deleteMessage",
+      body: %{
+        "chat_id" => chat_id,
+        "message_id" => message_id
+      }
+    )
+  end
+
+  def delete_message!(api, chat_id, message_id) do
+    {:ok, _} = delete_message(api, chat_id, message_id)
   end
 end

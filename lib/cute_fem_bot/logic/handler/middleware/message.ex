@@ -136,24 +136,43 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
         } = ctx
       ) do
     %{"message" => %{"message_id" => message_id}} = update
+    pers = ctx_deps_pers(ctx)
+    api = ctx_deps_api(ctx)
 
     case ctx do
-      %{:message_media => media} ->
-        {:ok, %{"message_id" => _moderation_message_id}} =
-          notify_suggestion(%{
-            moder_chat_id: moder_chat_id,
-            sender: sender,
-            api: ctx_deps_api(ctx),
-            media: media
-          })
+      %{:message_media => {type, file_id} = media} ->
+        case Persistence.find_existing_unapproved_suggestion_by_file_id(pers, file_id) do
+          :not_found ->
+            :ok =
+              Persistence.add_new_suggestion(pers, %{
+                user_id: uid,
+                file_id: file_id,
+                type: type
+              })
 
-        # Persistence.add_new_suggestion(ctx_deps_pers(ctx), media, moderation_message_id)
+            {:ok, %{"message_id" => msg_id}} =
+              notify_suggestion(%{
+                moder_chat_id: moder_chat_id,
+                sender: sender,
+                api: api,
+                media: media
+              })
 
-        Api.send_message(ctx_deps_api(ctx), %{
-          "chat_id" => uid,
-          "text" => "Спасибочки, принял 0w0",
-          "reply_to_message_id" => message_id
-        })
+            :ok = Persistence.bind_moderation_msg_to_suggestion(pers, file_id, msg_id)
+
+            Api.send_message(api, %{
+              "chat_id" => uid,
+              "text" => "Спасибочки, принял 0w0",
+              "reply_to_message_id" => message_id
+            })
+
+          {:ok, _} ->
+            Api.send_message(api, %{
+              "chat_id" => uid,
+              "text" => "Этот файл уже находится в очереди на аппрув",
+              "reply_to_message_id" => message_id
+            })
+        end
 
         :halt
 
@@ -190,9 +209,22 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
         %{
           "chat_id" => chat_id,
           "caption" => caption,
-          "parse_mode" => "markdown"
+          "parse_mode" => "markdown",
+          "reply_markup" => %{
+            "inline_keyboard" => [
+              [
+                inline_reply_btn("Ня", "approve"),
+                inline_reply_btn("Не ня", "reject"),
+                inline_reply_btn("Бан нахуй", "ban")
+              ]
+            ]
+          }
         }
         |> Map.put(ty_str, file_id)
     )
+  end
+
+  defp inline_reply_btn(text, callback_data) do
+    %{"text" => text, "callback_data" => callback_data}
   end
 end

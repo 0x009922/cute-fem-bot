@@ -24,7 +24,8 @@ defmodule CuteFemBot.Logic.Handler do
 
   @impl true
   def handle_cast({:handle_update, update}, state) do
-    CtxHandler.handle(CuteFemBot.Logic.Handler.Middleware, Map.merge(state, %{update: update}))
+    {:ok, _} =
+      CtxHandler.handle(CuteFemBot.Logic.Handler.Middleware, Map.merge(state, %{update: update}))
 
     {:noreply, state}
   end

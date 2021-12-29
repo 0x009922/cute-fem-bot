@@ -5,7 +5,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware do
     [
       :fetch_config,
       :try_handle_message,
-      :try_handle_query_callback,
+      :try_handle_callback_query,
       :ignore
     ]
   end
@@ -24,19 +24,10 @@ defmodule CuteFemBot.Logic.Handler.Middleware do
     end
   end
 
-  def try_handle_query_callback(%{update: update, deps: %{api: api}}) do
-    case update do
-      %{"callback_query" => %{"id" => id}} ->
-        CuteFemBot.Telegram.Api.request(
-          api,
-          method_name: "answerCallbackQuery",
-          body: %{
-            "callback_query_id" => id,
-            "text" => "Я пока не умею работать с кверями :/"
-          }
-        )
-
-        :halt
+  def try_handle_callback_query(ctx) do
+    case ctx.update do
+      %{"callback_query" => _} ->
+        {:cont, :sub_mod, CuteFemBot.Logic.Handler.Middleware.CallbackQuery, ctx}
 
       _ ->
         :cont

@@ -9,8 +9,14 @@ defmodule CtxHandler do
     }
 
     case walk(branch, state) do
-      {:done, %State{} = state} -> {:ok, state |> expose_state}
-      {:dead_end, %State{} = state} -> {:error, :dead_end, state |> expose_state}
+      {:done, %State{} = state} ->
+        {:ok, state |> expose_state}
+
+      {:dead_end, %State{} = state} ->
+        {:error, :dead_end, state |> expose_state}
+
+      {:bad_handler_answer, answer, %State{} = state} ->
+        {:error, :bad_answer, answer, state}
     end
   end
 
@@ -39,8 +45,6 @@ defmodule CtxHandler do
   end
 
   defp walk([handler | handlers_tail], %State{ctx: ctx} = state) do
-    # IO.inspect({handler, state}, label: "walk")
-
     state = update_path(state, handler)
 
     result = with {mod, fun} <- handler, do: apply(mod, fun, [ctx])
@@ -67,6 +71,9 @@ defmodule CtxHandler do
         state = update_ctx(state, ctx)
         branch = get_module_main(module)
         walk([branch | handlers_tail], state)
+
+      bad_answer ->
+        {:bad_handler_answer, bad_answer, state}
     end
   end
 
