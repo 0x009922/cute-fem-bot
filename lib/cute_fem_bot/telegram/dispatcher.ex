@@ -5,22 +5,27 @@ defmodule CuteFemBot.Telegram.Dispatcher do
 
   use GenServer
 
-  @impl true
-  def init(opts) do
-    handler_mod = Keyword.fetch!(opts, :handler_module)
-
-    {:ok, handler_mod}
+  def start_link([handler | opts]) do
+    GenServer.start_link(__MODULE__, handler, opts)
   end
 
   @impl true
-  def handle_cast({:dispatch_incoming_updates, updates}, handler_mod) do
+  def init(handler_fun) do
+    {:ok, handler_fun}
+  end
+
+  @impl true
+  def handle_cast({:dispatch_incoming_updates, updates}, handler_fun) do
     # it is possible here to make basic handling e.g. group messages from a single media group
-    Enum.each(updates, fn x -> apply(handler_mod, :handle_update, [x]) end)
+    Enum.each(updates, fn x ->
+      IO.inspect(x, label: "update")
+      handler_fun.(x)
+    end)
 
-    {:no_reply, handler_mod}
+    {:noreply, handler_fun}
   end
 
-  def dispatch_incoming_updates(dispatcher, updates) do
-    GenServer.cast(dispatcher, {:dispatch_incoming_updates, updates})
+  def dispatch_incoming_updates(name, updates) do
+    GenServer.cast(name, {:dispatch_incoming_updates, updates})
   end
 end

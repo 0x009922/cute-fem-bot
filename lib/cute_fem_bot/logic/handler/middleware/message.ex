@@ -15,7 +15,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
       %{"message" => %{"from" => %{"id" => user_id} = user, "chat" => %{"id" => chat_id}}} ->
         {
           :cont,
-          ctx: Map.put(ctx, :message_sender, %{user: user, user_id: user_id, chat_id: chat_id})
+          Map.put(ctx, :message_sender, %{user: user, user_id: user_id, chat_id: chat_id})
         }
 
       _ ->
@@ -23,15 +23,15 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
     end
   end
 
-  def update_user_meta(%{persistence: persistence, message_sender: %{user: user}}) do
-    CuteFemBot.Persistence.update_user_meta(persistence, user)
+  def update_user_meta(%{message_sender: %{user: user}} = ctx) do
+    CuteFemBot.Persistence.update_user_meta(ctx_deps_pers(ctx), user)
     :cont
   end
 
   def moderation_or_suggestor(
         %{
           message_sender: %{chat_id: cid},
-          config: %{moderation_chat_id: moderation_chat_id}
+          config: %CuteFemBot.Config{moderation_chat_id: moderation_chat_id}
         } = ctx
       ) do
     branch =
@@ -54,10 +54,10 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
     {:cont, :sub_branch, branch, ctx}
   end
 
-  def empty_moderation_answer(%{api: api, config: %{moderation_chat_id: chat_id}}) do
-    Api.send_message(api, %{
+  def empty_moderation_answer(%{config: %{moderation_chat_id: chat_id}} = ctx) do
+    Api.send_message(ctx_deps_api(ctx), %{
       "chat_id" => chat_id,
-      "text" => "Я не знаю, зачем вы мне прислали сообщение"
+      "text" => "Я не знаю, зачем вы мне прислали сообщение o_O"
     })
 
     :halt
@@ -66,14 +66,14 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
   def greet_user_if_start_command(%{update: update} = ctx) do
     case update do
       %{"message" => %{"text" => "/start"}} ->
-        %{message_sender: %{user_id: uid}, telegram_api: api} = ctx
+        %{message_sender: %{user_id: uid}} = ctx
 
         CuteFemBot.Telegram.Api.request(
-          api,
+          ctx_deps_api(ctx),
           method_name: "sendMessage",
           body: %{
             "chat_id" => uid,
-            "text" => "Hello!"
+            "text" => "Ня :з"
           }
         )
 
@@ -84,17 +84,18 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
     end
   end
 
-  def fetch_ban_list(%{persistence: pers} = ctx) do
-    {:cont, Map.put(ctx, :banned_users, Persistence.get_ban_list(pers))}
+  def fetch_ban_list(ctx) do
+    {:cont, Map.put(ctx, :banned_users, Persistence.get_ban_list(ctx_deps_pers(ctx)))}
   end
 
-  def ignore_user_if_he_is_banned(%{
-        message_sender: %{user_id: uid},
-        banned_users: banned_list,
-        api: api
-      }) do
+  def ignore_user_if_he_is_banned(
+        %{
+          message_sender: %{user_id: uid},
+          banned_users: banned_list
+        } = ctx
+      ) do
     if uid in banned_list do
-      Api.send_message(api, %{"chat_id" => uid, "text" => "ты в бане"})
+      Api.send_message(ctx_deps_api(ctx), %{"chat_id" => uid, "text" => ">:("})
       :halt
     else
       :cont
@@ -130,48 +131,34 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
   def handle_media(
         %{
           update: update,
-          telegram_api: api,
-          persistence: pers,
-          message_sender: %{user_id: uid},
+          message_sender: %{user_id: uid, user: sender},
           config: %{moderation_chat_id: moder_chat_id}
         } = ctx
       ) do
     %{"message" => %{"message_id" => message_id}} = update
 
     case ctx do
-      %{:message_media => {type, file_id} = media} ->
-        Api.send_message(api, %{
+      %{:message_media => media} ->
+        {:ok, %{"message_id" => _moderation_message_id}} =
+          notify_suggestion(%{
+            moder_chat_id: moder_chat_id,
+            sender: sender,
+            api: ctx_deps_api(ctx),
+            media: media
+          })
+
+        # Persistence.add_new_suggestion(ctx_deps_pers(ctx), media, moderation_message_id)
+
+        Api.send_message(ctx_deps_api(ctx), %{
           "chat_id" => uid,
-          "text" => "Спасибочки, принял )",
+          "text" => "Спасибочки, принял 0w0",
           "reply_to_message_id" => message_id
         })
-
-        %{"message_id" => moderation_message_id} =
-          Api.send_message(
-            api,
-            %{
-              "chat_id" => moder_chat_id,
-              "text" => "Новое предложение от пользователя (#{uid})[tg://user?id=#{uid}]",
-              "parse_mode" => "markdown",
-              "reply_markup" => %{
-                "inline_keyboard" => [
-                  [
-                    %{"text" => "+", "data" => "approve"},
-                    %{"text" => "-", "data" => "reject"},
-                    %{"text" => "ban", "data" => "ban"}
-                  ]
-                ]
-              }
-            }
-            |> Map.put(Atom.to_string(type), file_id)
-          )
-
-        Persistence.add_new_suggestion(pers, media, moderation_message_id)
 
         :halt
 
       _ ->
-        Api.send_message(api, %{
+        Api.send_message(ctx_deps_api(ctx), %{
           "chat_id" => uid,
           "text" => "Не-не-не... мне нужны только фотки",
           "reply_to_message_id" => message_id
@@ -179,5 +166,33 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
 
         :halt
     end
+  end
+
+  defp ctx_deps_api(%{deps: %{api: x}}) do
+    x
+  end
+
+  defp ctx_deps_pers(%{deps: %{persistence: x}}) do
+    x
+  end
+
+  defp notify_suggestion(%{moder_chat_id: chat_id, media: media, sender: sender, api: api}) do
+    user_formatted = CuteFemBot.Util.format_user_name(sender)
+    caption = "Предложка от #{user_formatted}"
+    {type, file_id} = media
+    ty_str = Atom.to_string(type)
+    method = "send" <> String.capitalize(ty_str)
+
+    Api.request(
+      api,
+      method_name: method,
+      body:
+        %{
+          "chat_id" => chat_id,
+          "caption" => caption,
+          "parse_mode" => "markdown"
+        }
+        |> Map.put(ty_str, file_id)
+    )
   end
 end

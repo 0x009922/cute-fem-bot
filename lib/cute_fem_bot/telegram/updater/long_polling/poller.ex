@@ -3,7 +3,7 @@ defmodule CuteFemBot.Telegram.Updater.LongPolling.Poller do
   Simple service that periodically fetches updates from Telegram
   """
 
-  alias CuteFemBot.Telegram.Api.Server
+  alias CuteFemBot.Telegram.Api
   alias CuteFemBot.Telegram.Updater.LongPolling
   alias LongPolling.Config
   alias LongPolling.State
@@ -17,7 +17,8 @@ defmodule CuteFemBot.Telegram.Updater.LongPolling.Poller do
 
   defp poll_loop(%Config{} = cfg, %State{} = state) do
     state =
-      case Server.make_request(
+      case Api.request(
+             cfg.api,
              method_name: "getUpdates",
              body: %{"offset" => compute_offset(state.greatest_known_update_id)}
            ) do

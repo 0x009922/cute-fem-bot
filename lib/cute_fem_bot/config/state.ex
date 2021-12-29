@@ -6,12 +6,12 @@ defmodule CuteFemBot.Config.State do
   use Agent
   require Logger
 
-  def start_link([%CuteFemBot.Config{} = cfg]) do
+  def start_link([%CuteFemBot.Config{} = cfg | opts]) do
     Logger.info("Starting Config State Agent")
-    Agent.start_link(fn -> cfg end, name: __MODULE__)
+    Agent.start_link(fn -> cfg end, opts)
   end
 
-  def get() do
-    Agent.get(__MODULE__, fn x -> x end)
+  def get(name) do
+    Agent.get(name, fn x -> x end)
   end
 end

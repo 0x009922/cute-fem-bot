@@ -5,12 +5,12 @@ defmodule CuteFemBot.Telegram.Api.Supervisor do
 
   use Supervisor
 
-  def start_link(init_arg) do
-    Supervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
+  def start_link(opts) do
+    Supervisor.start_link(__MODULE__, opts)
   end
 
   @impl true
-  def init([%CuteFemBot.Config{api_token: token}]) do
+  def init(opts) do
     children = [
       {
         Finch,
@@ -18,10 +18,10 @@ defmodule CuteFemBot.Telegram.Api.Supervisor do
       },
       {
         CuteFemBot.Telegram.Api,
-        name: CuteFemBot.Telegram.Api,
+        name: Keyword.get(opts, :api),
         ctx: %CuteFemBot.Telegram.Api.Context{
-          token: token,
-          finch: CuteFemBot.Tg.Api.Finch
+          finch: CuteFemBot.Telegram.Api.Finch,
+          config: Keyword.fetch!(opts, :config)
         }
       }
     ]

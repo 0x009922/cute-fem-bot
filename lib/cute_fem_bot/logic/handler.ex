@@ -1,27 +1,25 @@
 defmodule CuteFemBot.Logic.Handler do
-  @moduledoc """
-  Main handler for incoming telegram updates
-  """
-
-  # impl of Telegram Handler
-
-  @behaviour CuteFemBot.Telegram.Handler
-
-  @impl true
-  def handle_update(update) do
-    CuteFemBot.Logic.Handler |> GenServer.cast({:handle_update, update})
-  end
-
-  # impl GenServer
-
   use GenServer
 
-  @impl true
-  def init(opts) do
-    persistence = Keyword.fetch!(opts, :persistence)
-    api = Keyword.fetch!(opts, :telegram_api)
+  def start_link(opts) do
+    gen_opts = Keyword.take(opts, [:name])
+    init_opts = Keyword.take(opts, [:api, :persistence, :config])
 
-    {:ok, %{persistence: persistence, api: api}}
+    GenServer.start_link(__MODULE__, init_opts, gen_opts)
+  end
+
+  @impl true
+  def init(init_opts) do
+    {
+      :ok,
+      %{
+        deps: %{
+          api: Keyword.fetch!(init_opts, :api),
+          persistence: Keyword.fetch!(init_opts, :persistence),
+          config: Keyword.fetch!(init_opts, :config)
+        }
+      }
+    }
   end
 
   @impl true
@@ -29,5 +27,9 @@ defmodule CuteFemBot.Logic.Handler do
     CtxHandler.handle(CuteFemBot.Logic.Handler.Middleware, Map.merge(state, %{update: update}))
 
     {:noreply, state}
+  end
+
+  def handle(handler, update) do
+    GenServer.cast(handler, {:handle_update, update})
   end
 end

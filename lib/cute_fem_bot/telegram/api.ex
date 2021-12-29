@@ -4,21 +4,13 @@ defmodule CuteFemBot.Telegram.Api do
   alias CuteFemBot.Telegram.Api.Context
 
   def start_link(opts) do
-    name = Keyword.fetch!(opts, :name)
+    {%Context{} = ctx, opts} = Keyword.pop!(opts, :ctx)
 
-    ctx =
-      case Keyword.fetch!(opts, :ctx) do
-        %Context{} = ctx -> ctx
-      end
-
-    IO.puts("starting #{inspect(name)}")
-    GenServer.start_link(name, ctx)
+    GenServer.start_link(__MODULE__, ctx, opts)
   end
 
   @impl true
   def init(%Context{} = ctx) do
-    IO.inspect("init")
-
     {:ok, ctx}
   end
 
@@ -27,7 +19,7 @@ defmodule CuteFemBot.Telegram.Api do
     {:reply, make_request(ctx, opts), ctx}
   end
 
-  defp make_request(%Context{token: token, finch: finch}, opts) do
+  defp make_request(%Context{finch: finch, config: cfg}, opts) do
     method_name = Keyword.fetch!(opts, :method_name)
 
     body =
@@ -36,6 +28,8 @@ defmodule CuteFemBot.Telegram.Api do
         x when is_binary(x) -> x
         x -> JSON.encode!(x)
       end
+
+    %CuteFemBot.Config{api_token: token} = CuteFemBot.Config.State.get(cfg)
 
     Logger.debug("Making request to Telegram: #{method_name}")
 
@@ -71,6 +65,10 @@ defmodule CuteFemBot.Telegram.Api do
 
   def request(api, opts) do
     GenServer.call(api, {:make_request, opts})
+  end
+
+  def request!(api, opts) do
+    {:ok, _} = request(api, opts)
   end
 
   def send_message(api, body) do
