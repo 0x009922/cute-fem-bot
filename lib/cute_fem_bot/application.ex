@@ -26,6 +26,10 @@ defmodule CuteFemBot.Application do
       {CuteFemBot.Config.State, [cfg, name: CuteFemBot.Config.State]},
       {CuteFemBot.Persistence, name: CuteFemBot.Persistence},
       {
+        CuteFemBot.Persistence.Saver,
+        persistence: CuteFemBot.Persistence, name: CuteFemBot.Persistence.Saver
+      },
+      {
         CuteFemBot.Telegram.Api.Supervisor,
         api: CuteFemBot.Telegram.Api, config: CuteFemBot.Config.State
       },
@@ -50,4 +54,12 @@ defmodule CuteFemBot.Application do
     opts = [strategy: :one_for_one, name: CuteFemBot.Supervisor]
     Supervisor.start_link(children, opts)
   end
+
+  # doesn't work btw
+
+  # @impl true
+  # def prep_stop(_) do
+  #   CuteFemBot.Persistence.Saver.save_immediately(CuteFemBot.Persistence.Saver)
+  #   :ok
+  # end
 end

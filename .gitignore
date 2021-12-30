@@ -27,3 +27,6 @@ cute_fem_bot-*.tar
 
 # App runtime config
 config.yml
+
+# App saved state
+state

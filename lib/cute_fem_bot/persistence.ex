@@ -91,6 +91,14 @@ defmodule CuteFemBot.Persistence do
     }
   end
 
+  def handle_call(:get_state, _, state) do
+    {:reply, state, state}
+  end
+
+  def handle_call({:put_state, new_state}, _, _) do
+    {:reply, :ok, new_state}
+  end
+
   # Client API
 
   def update_user_meta(pers, data) do
@@ -148,5 +156,13 @@ defmodule CuteFemBot.Persistence do
 
   def unban_user(pers, user_id) do
     GenServer.call(pers, {:unban_user, user_id})
+  end
+
+  def get_state(pers) do
+    GenServer.call(pers, :get_state)
+  end
+
+  def put_state(pers, state) do
+    GenServer.call(pers, {:put_state, state})
   end
 end
