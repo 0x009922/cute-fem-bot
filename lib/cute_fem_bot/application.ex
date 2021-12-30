@@ -51,6 +51,13 @@ defmodule CuteFemBot.Application do
         }
       },
       {
+        CuteFemBot.Logic.Tasks.SetCommands,
+        deps: %{
+          api: CuteFemBot.Telegram.Api,
+          config: CuteFemBot.Config.State
+        }
+      },
+      {
         CuteFemBot.Telegram.Updater,
         [
           :long_polling,
