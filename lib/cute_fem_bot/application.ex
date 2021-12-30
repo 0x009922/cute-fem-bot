@@ -38,7 +38,17 @@ defmodule CuteFemBot.Application do
         name: CuteFemBot.Logic.Handler,
         api: CuteFemBot.Telegram.Api,
         persistence: CuteFemBot.Persistence,
-        config: CuteFemBot.Config.State
+        config: CuteFemBot.Config.State,
+        posting: CuteFemBot.Logic.Posting
+      },
+      {
+        CuteFemBot.Logic.Posting,
+        name: CuteFemBot.Logic.Posting,
+        deps: %{
+          api: CuteFemBot.Telegram.Api,
+          persistence: CuteFemBot.Persistence,
+          config: CuteFemBot.Config.State
+        }
       },
       {
         CuteFemBot.Telegram.Updater,

@@ -4,6 +4,7 @@ defmodule CuteFemBot.Telegram.Dispatcher do
   """
 
   use GenServer
+  require Logger
 
   def start_link([handler | opts]) do
     GenServer.start_link(__MODULE__, handler, opts)
@@ -16,9 +17,10 @@ defmodule CuteFemBot.Telegram.Dispatcher do
 
   @impl true
   def handle_cast({:dispatch_incoming_updates, updates}, handler_fun) do
+    Logger.debug("Dispatching updates: #{inspect(updates, pretty: true)}")
+
     # it is possible here to make basic handling e.g. group messages from a single media group
     Enum.each(updates, fn x ->
-      IO.inspect(x, label: "update")
       handler_fun.(x)
     end)
 

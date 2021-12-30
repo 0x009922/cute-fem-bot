@@ -72,9 +72,11 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message.Moderation do
           nil ->
             send_msg!.(%{
               "text" => """
-              Я не знаю, что ты хочешь
+              Я не знаю, что ты хочешь v_v
 
-              Используй /schedule для установки расписания
+              Используй /schedule для установки или просмотра расписания.
+              Управлять списком бана пока нельзя.
+              Получать доступ к очереди постинга тоже (смотреть её, возможно отменять).
               """
             })
 
@@ -102,7 +104,6 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message.Moderation do
                     posting ->
                       if Posting.is_complete?(posting) do
                         {:ok, cron} = Posting.format_cron(posting)
-                        IO.inspect({posting, cron}, label: "cron")
 
                         next_fire =
                           with {:ok, x} <-
@@ -115,7 +116,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message.Moderation do
                         {:ok, flush} = Posting.format_flush(posting)
 
                         """
-                        Расписание: #{cron}
+                        Расписание: <code>#{cron}</code>
                         Flush: #{flush}
                         Следующий пост: #{next_fire} (UTC)
                         """
@@ -183,6 +184,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message.Moderation do
             case Posting.put_raw_flush(state, raw_flush) do
               {:ok, updated} ->
                 CuteFemBot.Persistence.set_posting(ctx.deps.persistence, updated)
+                CuteFemBot.Logic.Posting.reschedule(ctx.deps.posting)
                 set_chat_state.(nil)
                 send_msg!.(%{"text" => "Ня. Новое расписание принято."})
                 :halt

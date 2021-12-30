@@ -98,4 +98,12 @@ defmodule CuteFemBot.Persistence.State do
         {:ok, %Self{state | unapproved: unapproved}}
     end
   end
+
+  def files_posted(state, ids) do
+    %Self{
+      state
+      | approved_queue:
+          Enum.filter(state.approved_queue, fn {_, file_id} -> file_id not in ids end)
+    }
+  end
 end

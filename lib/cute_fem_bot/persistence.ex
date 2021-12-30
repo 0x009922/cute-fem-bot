@@ -115,6 +115,10 @@ defmodule CuteFemBot.Persistence do
     {:reply, :ok, %State{state | mod_chat_state: value}}
   end
 
+  def handle_call({:files_posted, ids}, _, state) do
+    {:reply, :ok, State.files_posted(state, ids)}
+  end
+
   # Client API
 
   def update_user_meta(pers, data) do
@@ -159,6 +163,10 @@ defmodule CuteFemBot.Persistence do
 
   def get_approved_queue(pers) do
     GenServer.call(pers, :approved_queue)
+  end
+
+  def files_posted(pers, files_list) do
+    GenServer.call(pers, {:files_posted, files_list})
   end
 
   def get_ban_list(pers) do

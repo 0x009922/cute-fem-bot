@@ -91,4 +91,22 @@ defmodule CuteFemBotPersistenceTest do
     assert Persistence.add_new_suggestion(pers, data) == :ok
     assert Persistence.add_new_suggestion(pers, data) == :duplication
   end
+
+  test "committing files posting", %{pers: pers} do
+    file1 = %{user_id: 0, file_id: 0, type: :photo}
+    file2 = %{user_id: 0, file_id: 1, type: :photo}
+
+    [
+      file1,
+      file2
+    ]
+    |> Enum.each(fn f ->
+      Persistence.add_new_suggestion(pers, f)
+      Persistence.approve_media(pers, f.file_id)
+    end)
+
+    Persistence.files_posted(pers, [1, 0])
+
+    assert Persistence.get_approved_queue(pers) == []
+  end
 end
