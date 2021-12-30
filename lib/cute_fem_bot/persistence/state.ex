@@ -8,6 +8,8 @@ defmodule CuteFemBot.Persistence.State do
     field(:unapproved, map(), default: %{})
     field(:approved_queue, list(), default: [])
     field(:banned, MapSet.t(), default: MapSet.new())
+    field(:posting, CuteFemBot.Core.Posting.t(), default: nil)
+    field(:mod_chat_state, any(), default: nil)
   end
 
   def update_user_meta(%Self{users_meta: x} = state, %{"id" => id} = data) do

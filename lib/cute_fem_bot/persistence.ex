@@ -99,6 +99,22 @@ defmodule CuteFemBot.Persistence do
     {:reply, :ok, new_state}
   end
 
+  def handle_call(:get_posting, _, state) do
+    {:reply, state.posting, state}
+  end
+
+  def handle_call({:set_posting, value}, _, state) do
+    {:reply, :ok, %State{state | posting: value}}
+  end
+
+  def handle_call(:get_mod_chat_state, _, state) do
+    {:reply, state.mod_chat_state, state}
+  end
+
+  def handle_call({:set_mod_chat_state, value}, _, state) do
+    {:reply, :ok, %State{state | mod_chat_state: value}}
+  end
+
   # Client API
 
   def update_user_meta(pers, data) do
@@ -164,5 +180,21 @@ defmodule CuteFemBot.Persistence do
 
   def put_state(pers, state) do
     GenServer.call(pers, {:put_state, state})
+  end
+
+  def get_posting(pers) do
+    GenServer.call(pers, :get_posting)
+  end
+
+  def set_posting(pers, %CuteFemBot.Core.Posting{} = value) do
+    GenServer.call(pers, {:set_posting, value})
+  end
+
+  def get_moderation_chat_state(pers) do
+    GenServer.call(pers, :get_mod_chat_state)
+  end
+
+  def set_moderation_chat_state(pers, state) do
+    GenServer.call(pers, {:set_mod_chat_state, state})
   end
 end

@@ -13,4 +13,20 @@ defmodule CuteFemBotUtilTest do
                "[empty](tg://user?id=0)"
     end
   end
+
+  describe "parse_command" do
+    test "cmd without mention" do
+      assert parse_command("/start") == %{cmd: "start"}
+    end
+
+    test "cmd with mention" do
+      assert parse_command("/test@username") == %{cmd: "test", username: "username"}
+    end
+  end
+
+  describe "format_datetime" do
+    test "formats" do
+      assert format_datetime(~N[2020-10-25 10:00:00.123]) == "25.10.2020 10:00"
+    end
+  end
 end

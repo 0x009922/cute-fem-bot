@@ -20,6 +20,23 @@ defmodule CuteFemBot.Util do
     end
   end
 
-  def nil_or_trim(nil), do: ""
-  def nil_or_trim(x) when is_binary(x), do: String.trim(x)
+  def parse_command(raw) do
+    case Regex.scan(~r{^/(\w+)(?:@(\w+))?$}, raw) do
+      [[_ | groups]] ->
+        case groups do
+          [cmd] -> %{cmd: cmd}
+          [cmd, username] -> %{cmd: cmd, username: username}
+        end
+
+      _ ->
+        :error
+    end
+  end
+
+  def format_datetime(%NaiveDateTime{} = dt) do
+    Calendar.strftime(dt, "%d.%m.%Y %H:%M")
+  end
+
+  defp nil_or_trim(nil), do: ""
+  defp nil_or_trim(x) when is_binary(x), do: String.trim(x)
 end

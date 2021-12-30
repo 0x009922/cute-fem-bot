@@ -44,7 +44,7 @@ defmodule CuteFemBot.Application do
         CuteFemBot.Telegram.Updater,
         [
           :long_polling,
-          interval: 5_000,
+          interval: 1_000,
           handler_fun: handle_update_fun,
           api: CuteFemBot.Telegram.Api
         ]

@@ -38,7 +38,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
       if cid == moderation_chat_id do
         # moderation
         [
-          :empty_moderation_answer
+          :go_to_moderation
         ]
       else
         # suggestor
@@ -54,13 +54,8 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Message do
     {:cont, :sub_branch, branch, ctx}
   end
 
-  def empty_moderation_answer(%{config: %{moderation_chat_id: chat_id}} = ctx) do
-    Api.send_message(ctx_deps_api(ctx), %{
-      "chat_id" => chat_id,
-      "text" => "Я не знаю, зачем вы мне прислали сообщение o_O"
-    })
-
-    :halt
+  def go_to_moderation(ctx) do
+    {:cont, :sub_mod, __MODULE__.Moderation, ctx}
   end
 
   def greet_user_if_start_command(%{update: update} = ctx) do
