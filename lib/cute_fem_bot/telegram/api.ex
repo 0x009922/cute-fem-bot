@@ -88,4 +88,14 @@ defmodule CuteFemBot.Telegram.Api do
   def delete_message!(api, chat_id, message_id) do
     {:ok, _} = delete_message(api, chat_id, message_id)
   end
+
+  def answer_callback_query(api, query_id, opts \\ []) do
+    request(
+      api,
+      method_name: "answerCallbackQuery",
+      body: %{
+        "callback_query_id" => query_id
+      }
+    )
+  end
 end

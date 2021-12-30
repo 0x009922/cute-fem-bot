@@ -1,41 +1,77 @@
 defmodule CuteFemBot.Logic.Handler.Middleware do
   require Logger
 
+  alias CuteFemBot.Logic.Handler.Ctx
+  alias CuteFemBot.Logic.Handler.Middleware.Moderator
+  alias CuteFemBot.Logic.Handler.Middleware.Suggestor
+
   def main() do
     [
       :fetch_config,
-      :try_handle_message,
-      :try_handle_callback_query,
-      :ignore
+      :high_level_update_parsing
     ]
   end
 
   def fetch_config(ctx) do
-    {:cont, Map.put(ctx, :config, CuteFemBot.Config.State.get(ctx.deps.config))}
+    {:cont, Ctx.fetch_config(ctx)}
   end
 
-  def try_handle_message(%{update: update} = ctx) do
-    case update do
-      %{"message" => _} ->
-        {:cont, :sub_mod, CuteFemBot.Logic.Handler.Middleware.Message, ctx}
+  def high_level_update_parsing(ctx) do
+    %CuteFemBot.Config{moderation_chat_id: mod_chat_id} = Ctx.get_config(ctx)
 
-      _ ->
-        :cont
+    parsed =
+      case ctx.update do
+        %{"message" => %{"chat" => %{"id" => chat_id}} = msg} ->
+          if chat_id == mod_chat_id do
+            {:moderator, {:message, msg}}
+          else
+            {:default, {:message, msg}}
+          end
+
+        %{"callback_query" => callback} ->
+          branch =
+            case callback do
+              %{"message" => %{"chat" => %{"id" => chat_id, "type" => chat_type}}} ->
+                cond do
+                  chat_id == mod_chat_id -> :moderator
+                  chat_type == "private" -> :suggestor
+                  true -> :unknown
+                end
+
+              _ ->
+                :unknown
+            end
+
+          case branch do
+            :unknown -> {:bad_callback_query, callback}
+            role -> {role, {:callback_query, callback}}
+          end
+
+        _ ->
+          :skip
+      end
+
+    case parsed do
+      {:moderator, update} ->
+        {:cont, :sub_mod, Moderator, Map.put(ctx, :update, update)}
+
+      {:suggestor, update} ->
+        {:cont, :sub_mod, Suggestor, Map.put(ctx, :update, update)}
+
+      :skip ->
+        :halt
+
+      {:bad_callback_query, %{"id" => query_id}} ->
+        CuteFemBot.Telegram.Api.request!(
+          Ctx.deps_api(ctx),
+          method_name: "answerCallbackQuery",
+          body: %{
+            "callback_query_id" => query_id,
+            "text" => "Ответить не могу ничем :|"
+          }
+        )
+
+        :halt
     end
-  end
-
-  def try_handle_callback_query(ctx) do
-    case ctx.update do
-      %{"callback_query" => _} ->
-        {:cont, :sub_mod, CuteFemBot.Logic.Handler.Middleware.CallbackQuery, ctx}
-
-      _ ->
-        :cont
-    end
-  end
-
-  def ignore(ctx) do
-    Logger.debug("Ignoring update, ctx: #{inspect(ctx)}")
-    :halt
   end
 end

@@ -13,7 +13,16 @@ defmodule CuteFemBot.Logic.Tasks.SetCommands do
 
     delete_commands(api, scope_chat(mod_chat))
     delete_commands(api, scope_default())
-    set_commands(api, scope_chat(mod_chat), [cmd("schedule", "Управление расписанием")])
+
+    set_commands(api, scope_chat(mod_chat), [
+      cmd("schedule", "Расписание - просмотр, установка"),
+      cmd("queue", "Очередь - посмотреть [отменить?]"),
+      cmd("cancel", "Отмена текущей операции")
+    ])
+
+    set_commands(api, scope_default(), [
+      cmd("help", "Получить памятку по использованию")
+    ])
 
     Logger.info("Done")
   end

@@ -1,6 +1,9 @@
 defmodule CuteFemBot.Logic.Handler do
   use GenServer
 
+  alias __MODULE__.Middleware
+  alias __MODULE__.Ctx
+
   def start_link(opts) do
     gen_opts = Keyword.take(opts, [:name])
     init_opts = Keyword.take(opts, [:api, :persistence, :config, :posting])
@@ -25,8 +28,7 @@ defmodule CuteFemBot.Logic.Handler do
 
   @impl true
   def handle_cast({:handle_update, update}, state) do
-    {:ok, _} =
-      CtxHandler.handle(CuteFemBot.Logic.Handler.Middleware, Map.merge(state, %{update: update}))
+    {:ok, _} = CtxHandler.handle(CuteFemBot.Logic.Handler.Middleware, Ctx.new(state.deps, update))
 
     {:noreply, state}
   end
