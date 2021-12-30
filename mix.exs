@@ -25,7 +25,8 @@ defmodule CuteFemBot.MixProject do
       {:finch, "~> 0.10"},
       {:typed_struct, "~> 0.2.1"},
       {:yaml_elixir, "~> 2.8.0"},
-      {:json, "~> 1.4"}
+      {:json, "~> 1.4"},
+      {:crontab, "~> 1.1.10"}
     ]
   end
 end
