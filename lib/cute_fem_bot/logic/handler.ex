@@ -3,6 +3,9 @@ defmodule CuteFemBot.Logic.Handler do
 
   alias __MODULE__.Middleware
   alias __MODULE__.Ctx
+  alias CuteFemBot.Telegram.Api
+  alias CuteFemBot.Telegram.Types.Message
+  alias CuteFemBot.Config
 
   def start_link(opts) do
     gen_opts = Keyword.take(opts, [:name])
@@ -28,12 +31,42 @@ defmodule CuteFemBot.Logic.Handler do
 
   @impl true
   def handle_cast({:handle_update, update}, state) do
-    {:ok, _} = CtxHandler.handle(CuteFemBot.Logic.Handler.Middleware, Ctx.new(state.deps, update))
+    case CtxHandler.handle(Middleware, Ctx.new(state.deps, update)) do
+      {:ok, _} -> nil
+      {:error, :raised, err, handler_state} -> handle_error(state.deps, handler_state, err)
+    end
 
     {:noreply, state}
   end
 
   def handle(handler, update) do
     GenServer.cast(handler, {:handle_update, update})
+  end
+
+  defp handle_error(deps, state, err) do
+    inspect_data =
+      inspect(
+        %{
+          state: state,
+          error: err
+        },
+        pretty: true,
+        syntax_colors: []
+      )
+      |> CuteFemBot.Util.escape_html()
+
+    text = """
+    Хозяин, у меня ошибка во время обработки апдейта.
+
+    <pre>#{inspect_data}</pre>
+    """
+
+    %Config{master_chat_id: chat_id} = Config.State.get(deps.config)
+
+    {:ok, _} =
+      Api.send_message(
+        deps.api,
+        Message.with_text(text) |> Message.set_chat_id(chat_id) |> Message.set_parse_mode("html")
+      )
   end
 end

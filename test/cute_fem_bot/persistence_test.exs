@@ -2,6 +2,7 @@ defmodule CuteFemBotPersistenceTest do
   use ExUnit.Case
 
   alias CuteFemBot.Persistence
+  alias CuteFemBot.Core.Suggestion
 
   setup do
     pid = start_supervised!(Persistence)
@@ -38,15 +39,13 @@ defmodule CuteFemBotPersistenceTest do
   end
 
   test "registering suggestion and then fetching it", %{pers: pers} do
-    data = %{
-      user_id: 9,
-      file_id: 4,
-      type: :photo
-    }
+    data = Suggestion.new(:photo, 4, 9)
 
     assert Persistence.add_new_suggestion(pers, data) == :ok
     assert Persistence.bind_moderation_msg_to_suggestion(pers, 4, 99) == :ok
-    assert Persistence.find_suggestion_by_moderation_msg(pers, 99) == {:ok, data}
+
+    assert Persistence.find_suggestion_by_moderation_msg(pers, 99) ==
+             {:ok, data |> Suggestion.bind_moderation_msg(99)}
   end
 
   test "suggestion not found if not added", %{pers: pers} do
@@ -54,25 +53,17 @@ defmodule CuteFemBotPersistenceTest do
   end
 
   test "approving media", %{pers: pers} do
-    data = %{
-      user_id: 9,
-      file_id: 4,
-      type: :photo
-    }
+    data = Suggestion.new(:photo, 4, 9)
 
     assert Persistence.add_new_suggestion(pers, data) == :ok
     assert Persistence.bind_moderation_msg_to_suggestion(pers, 4, 99) == :ok
     assert Persistence.approve_media(pers, 4) == :ok
     assert Persistence.find_suggestion_by_moderation_msg(pers, 99) == :not_found
-    assert Persistence.get_approved_queue(pers) == [{:photo, 4}]
+    assert Persistence.get_approved_queue(pers) == [data |> Suggestion.bind_moderation_msg(99)]
   end
 
   test "rejecting media", %{pers: pers} do
-    data = %{
-      user_id: 9,
-      file_id: 4,
-      type: :photo
-    }
+    data = Suggestion.new(:photo, 4, 9)
 
     assert Persistence.add_new_suggestion(pers, data) == :ok
     assert Persistence.bind_moderation_msg_to_suggestion(pers, 4, 99) == :ok
@@ -82,19 +73,15 @@ defmodule CuteFemBotPersistenceTest do
   end
 
   test "adding the same unapproved file again", %{pers: pers} do
-    data = %{
-      user_id: 9,
-      file_id: 4,
-      type: :photo
-    }
+    data = Suggestion.new(:photo, 4, 9)
 
     assert Persistence.add_new_suggestion(pers, data) == :ok
     assert Persistence.add_new_suggestion(pers, data) == :duplication
   end
 
   test "committing files posting", %{pers: pers} do
-    file1 = %{user_id: 0, file_id: 0, type: :photo}
-    file2 = %{user_id: 0, file_id: 1, type: :photo}
+    file1 = Suggestion.new(:photo, 0, 0)
+    file2 = Suggestion.new(:photo, 1, 0)
 
     [
       file1,

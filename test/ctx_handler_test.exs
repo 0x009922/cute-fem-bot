@@ -9,6 +9,7 @@ defmodule ContextFallTest do
         :gender_greeting,
         :determine_rating,
         :go_to_mod_b,
+        :maybe_error,
         :return_ctx
       ]
     end
@@ -35,6 +36,13 @@ defmodule ContextFallTest do
 
     def go_to_mod_b(ctx) do
       {:cont, :sub_mod, ContextFallTest.HandlerModB, ctx}
+    end
+
+    def maybe_error(ctx) do
+      case ctx do
+        %{error: true} -> raise "Test error"
+        _ -> :cont
+      end
     end
 
     def return_ctx(ctx) do
@@ -90,7 +98,14 @@ defmodule ContextFallTest do
              {HandlerModA, :go_to_mod_b},
              {HandlerModB, :entry},
              {HandlerModB, :empty_handler},
+             {HandlerModA, :maybe_error},
              {HandlerModA, :return_ctx}
            ]
+  end
+
+  test "error is raised during the handling" do
+    result = CtxHandler.handle(HandlerModA, ctx_factory(:male, 20) |> Map.put(:error, true))
+
+    assert {:error, :raised, %RuntimeError{message: "Test error"}, _state} = result
   end
 end

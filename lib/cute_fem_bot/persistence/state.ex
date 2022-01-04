@@ -2,6 +2,7 @@ defmodule CuteFemBot.Persistence.State do
   use TypedStruct
 
   alias __MODULE__, as: Self
+  alias CuteFemBot.Core.Suggestion
 
   typedstruct do
     field(:users_meta, map(), default: %{})
@@ -16,13 +17,16 @@ defmodule CuteFemBot.Persistence.State do
     %Self{state | users_meta: Map.put(x, id, data)}
   end
 
-  def add_suggestion(%Self{unapproved: unapproved} = state, file_id, type, user_id) do
+  def add_suggestion(
+        %Self{unapproved: unapproved} = state,
+        %Suggestion{file_id: file_id} = suggestion
+      ) do
     if Map.has_key?(unapproved, file_id) do
       :duplication
     else
       {
         :ok,
-        %Self{state | unapproved: Map.put(unapproved, file_id, %{type: type, user_id: user_id})}
+        %Self{state | unapproved: Map.put(unapproved, file_id, suggestion)}
       }
     end
   end
@@ -32,8 +36,8 @@ defmodule CuteFemBot.Persistence.State do
       :not_found
     else
       Map.update!(state, :unapproved, fn map ->
-        Map.update!(map, file_id, fn file_data ->
-          Map.put(file_data, :moderation_message_id, msg_id)
+        Map.update!(map, file_id, fn %Suggestion{} = item ->
+          Suggestion.bind_moderation_msg(item, msg_id)
         end)
       end)
     end
@@ -55,20 +59,20 @@ defmodule CuteFemBot.Persistence.State do
   end
 
   def find_unapproved_by_moderation_message(state, msg_id) do
-    case Enum.find(state.unapproved, fn {_file_id, data} ->
-           case data do
-             %{moderation_message_id: ^msg_id} -> true
-             _ -> false
-           end
-         end) do
+    find_result =
+      Enum.find(state.unapproved, fn {_file_id, data} ->
+        case data do
+          %Suggestion{moderation_message_id: ^msg_id} -> true
+          _ -> false
+        end
+      end)
+
+    case find_result do
       nil ->
         :not_found
 
-      {file_id, data} ->
-        with map <-
-               Map.take(data, [:user_id, :type])
-               |> Map.merge(%{file_id: file_id}),
-             do: {:ok, map}
+      {_, data} ->
+        {:ok, data}
     end
   end
 
@@ -77,13 +81,13 @@ defmodule CuteFemBot.Persistence.State do
       {nil, _} ->
         :not_found
 
-      {%{type: ty}, unapproved} ->
+      {data, unapproved} ->
         {
           :ok,
           %Self{
             state
             | unapproved: unapproved,
-              approved_queue: state.approved_queue ++ [{ty, file_id}]
+              approved_queue: state.approved_queue ++ [data]
           }
         }
     end
@@ -103,7 +107,9 @@ defmodule CuteFemBot.Persistence.State do
     %Self{
       state
       | approved_queue:
-          Enum.filter(state.approved_queue, fn {_, file_id} -> file_id not in ids end)
+          Enum.filter(state.approved_queue, fn %Suggestion{file_id: file_id} ->
+            file_id not in ids
+          end)
     }
   end
 end

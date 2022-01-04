@@ -1,4 +1,6 @@
 defmodule CuteFemBot.Logic.Handler.Ctx do
+  alias CuteFemBot.Telegram.Types.Message
+
   def new(deps, update) do
     %{deps: deps, update: update}
   end
@@ -13,4 +15,17 @@ defmodule CuteFemBot.Logic.Handler.Ctx do
   end
 
   def get_config(%{config: x}), do: x
+
+  def send_message_to_moderation!(ctx, body) do
+    {:ok, x} =
+      CuteFemBot.Telegram.Api.send_message(
+        ctx.deps.api,
+        Message.new()
+        |> Message.set_chat_id(ctx.config.moderation_chat_id)
+        |> Message.set_parse_mode("html")
+        |> Map.merge(body)
+      )
+
+    x
+  end
 end

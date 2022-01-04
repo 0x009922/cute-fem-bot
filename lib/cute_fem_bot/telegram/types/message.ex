@@ -25,4 +25,8 @@ defmodule CuteFemBot.Telegram.Types.Message do
       "inline_keyboard" => markup
     })
   end
+
+  def set_reply_to(msg, message_id) do
+    Map.put(msg, "reply_to_message_id", message_id)
+  end
 end

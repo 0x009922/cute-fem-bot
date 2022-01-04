@@ -68,7 +68,8 @@ defmodule CuteFemBot.Telegram.Api do
   end
 
   def request!(api, opts) do
-    {:ok, _} = request(api, opts)
+    {:ok, response} = request(api, opts)
+    response
   end
 
   def send_message(api, body) do

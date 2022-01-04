@@ -25,7 +25,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware do
           if chat_id == mod_chat_id do
             {:moderator, {:message, msg}}
           else
-            {:default, {:message, msg}}
+            {:suggestor, {:message, msg}}
           end
 
         %{"callback_query" => callback} ->

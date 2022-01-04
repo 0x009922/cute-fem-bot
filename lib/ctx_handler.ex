@@ -17,6 +17,9 @@ defmodule CtxHandler do
 
       {:bad_handler_answer, answer, %State{} = state} ->
         {:error, :bad_answer, answer, state}
+
+      {:raised, err, state} ->
+        {:error, :raised, err, state}
     end
   end
 
@@ -47,9 +50,20 @@ defmodule CtxHandler do
   defp walk([handler | handlers_tail], %State{ctx: ctx} = state) do
     state = update_path(state, handler)
 
-    result = with {mod, fun} <- handler, do: apply(mod, fun, [ctx])
+    result =
+      with {mod, fun} <- handler do
+        try do
+          apply(mod, fun, [ctx])
+        rescue
+          err ->
+            {:raised, err}
+        end
+      end
 
     case result do
+      {:raised, err} ->
+        {:raised, err, state}
+
       :halt ->
         {:done, state}
 

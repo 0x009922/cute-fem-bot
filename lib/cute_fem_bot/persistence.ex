@@ -2,6 +2,7 @@ defmodule CuteFemBot.Persistence do
   use GenServer
 
   alias __MODULE__.State
+  alias CuteFemBot.Core.Suggestion
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, nil, opts)
@@ -20,16 +21,12 @@ defmodule CuteFemBot.Persistence do
   def handle_call(
         {
           :new_suggestion,
-          %{
-            user_id: user_id,
-            type: type,
-            file_id: file_id
-          }
+          %Suggestion{} = data
         },
         _,
         state
       ) do
-    case State.add_suggestion(state, file_id, type, user_id) do
+    case State.add_suggestion(state, data) do
       :duplication -> {:reply, :duplication, state}
       {:ok, state} -> {:reply, :ok, state}
     end
@@ -125,14 +122,15 @@ defmodule CuteFemBot.Persistence do
     GenServer.call(pers, {:update_user_meta, data})
   end
 
-  @spec get_user_meta(atom | pid | {atom, any} | {:via, atom, any}, any) :: any
+  @spec get_user_meta(atom | pid | {atom, any} | {:via, atom, any}, any) ::
+          :not_found | {:ok, any}
   def get_user_meta(pers, id) do
     GenServer.call(pers, {:get_user_meta, id})
   end
 
   def add_new_suggestion(
         pers,
-        %{user_id: _, type: _, file_id: _} = data
+        %Suggestion{} = data
       ) do
     GenServer.call(pers, {:new_suggestion, data})
   end

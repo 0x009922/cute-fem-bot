@@ -1,23 +1,42 @@
 defmodule CuteFemBot.Util do
-  def format_user_name(user, anonymous_fallback \\ "<no name>") do
-    %{"id" => id} = user
+  def format_user_name(%{"id" => id} = user, mode, opts \\ [])
+      when mode == :markdown or mode == :html do
+    anonymous =
+      Keyword.get(
+        opts,
+        :anonymous,
+        case mode do
+          :markdown -> "_no name_"
+          :html -> "<i>no name</i>"
+        end
+      )
 
     first_name = Map.get(user, "first_name") |> nil_or_trim
     last_name = Map.get(user, "last_name") |> nil_or_trim
     username = Map.get(user, "username")
 
+    link = user_link(id)
+
     name =
       case {first_name, last_name} do
-        {"", ""} -> anonymous_fallback
+        {"", ""} -> anonymous
         {a, b} -> [a, b] |> Enum.filter(fn x -> x != nil and x != "" end) |> Enum.join(" ")
       end
 
-    name_with_id = "[#{name}](tg://user?id=#{id})"
+    name =
+      case mode do
+        :markdown -> "[#{name}](#{link})"
+        :html -> "<a href=\"#{link}\">#{name}</a>"
+      end
 
     case username do
-      nil -> name_with_id
-      x -> "#{name_with_id} (@#{x})"
+      nil -> name
+      x -> "#{name} (@#{x})"
     end
+  end
+
+  def user_link(id) do
+    "tg://user?id=#{id}"
   end
 
   def parse_command(raw) do
@@ -35,6 +54,30 @@ defmodule CuteFemBot.Util do
 
   def format_datetime(%NaiveDateTime{} = dt) do
     Calendar.strftime(dt, "%d.%m.%Y %H:%M")
+  end
+
+  def find_all_commands(%{"text" => text}) do
+    case Regex.scan(~r{/(\w+)(?:@(\w+))?}, text) do
+      [] ->
+        %{}
+
+      occures ->
+        Stream.map(occures, fn [_whole | groups] ->
+          case groups do
+            [only_cmd] -> {only_cmd, nil}
+            [cmd, username] -> {cmd, %{username: username}}
+          end
+        end)
+        |> Enum.into(%{})
+    end
+  end
+
+  def find_all_commands(_), do: %{}
+
+  def escape_html(text) when is_binary(text) do
+    text
+    |> String.replace(~r{<}, "&lt;")
+    |> String.replace(~r{>}, "&gt;")
   end
 
   defp nil_or_trim(nil), do: ""

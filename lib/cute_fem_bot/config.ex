@@ -11,6 +11,7 @@ defmodule CuteFemBot.Config do
     field(:api_token, String.t(), enforce: true)
     field(:moderation_chat_id, integer(), enforce: true)
     field(:posting_chat_id, integer(), enforce: true)
+    field(:master_chat_id, integer(), enforce: true)
   end
 
   def read_cfg() do
@@ -26,11 +27,20 @@ defmodule CuteFemBot.Config do
           %{
             "api_token" => token,
             "moderation_chat_id" => mod,
-            "posting_chat_id" => posting
+            "posting_chat_id" => posting,
+            "master_chat_id" => master
           }
         ]
       } ->
-        {:ok, %__MODULE__{api_token: token, moderation_chat_id: mod, posting_chat_id: posting}}
+        {
+          :ok,
+          %__MODULE__{
+            api_token: token,
+            moderation_chat_id: mod,
+            posting_chat_id: posting,
+            master_chat_id: master
+          }
+        }
 
       {:ok, _} ->
         {:error, "Bad config"}
