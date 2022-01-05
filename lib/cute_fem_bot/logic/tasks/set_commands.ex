@@ -17,6 +17,7 @@ defmodule CuteFemBot.Logic.Tasks.SetCommands do
     set_commands(api, scope_chat(mod_chat), [
       cmd("schedule", "Расписание - просмотр, установка"),
       cmd("queue", "Очередь - посмотреть [отменить?]"),
+      cmd("unban", "Разбанить пользователей"),
       cmd("cancel", "Отмена текущей операции")
     ])
 

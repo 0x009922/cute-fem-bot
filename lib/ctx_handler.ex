@@ -16,10 +16,10 @@ defmodule CtxHandler do
         {:error, :dead_end, state |> expose_state}
 
       {:bad_handler_answer, answer, %State{} = state} ->
-        {:error, :bad_answer, answer, state}
+        {:error, :bad_answer, answer, state |> expose_state}
 
-      {:raised, err, state} ->
-        {:error, :raised, err, state}
+      {:raised, err, trace, state} ->
+        {:error, :raised, err, trace, state |> expose_state}
     end
   end
 
@@ -56,13 +56,13 @@ defmodule CtxHandler do
           apply(mod, fun, [ctx])
         rescue
           err ->
-            {:raised, err}
+            {:raised, err, __STACKTRACE__}
         end
       end
 
     case result do
-      {:raised, err} ->
-        {:raised, err, state}
+      {:raised, err, trace} ->
+        {:raised, err, trace, state}
 
       :halt ->
         {:done, state}

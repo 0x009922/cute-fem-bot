@@ -8,6 +8,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Suggestor do
   def main() do
     [
       :extract_sender,
+      :update_user_meta,
       :handle_banlist,
       :handle_commands,
       :handle_suggestion,
@@ -18,6 +19,11 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Suggestor do
   def extract_sender(ctx) do
     {:message, %{"from" => user}} = ctx.update
     {:cont, Map.put(ctx, :sender, user)}
+  end
+
+  def update_user_meta(ctx) do
+    Persistence.update_user_meta(Ctx.deps_persistence(ctx), ctx.sender)
+    :cont
   end
 
   def handle_banlist(ctx) do

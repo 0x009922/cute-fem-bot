@@ -10,6 +10,10 @@ defmodule CuteFemBot.Logic.Handler.Ctx do
   def deps_config(%{deps: %{config: x}}), do: x
   def deps_posting(%{deps: %{posting: x}}), do: x
 
+  def conf_moderation_chat_id(%{config: %CuteFemBot.Config{moderation_chat_id: x}}) do
+    x
+  end
+
   def fetch_config(ctx) do
     Map.put(ctx, :config, CuteFemBot.Config.State.get(deps_config(ctx)))
   end
@@ -27,5 +31,9 @@ defmodule CuteFemBot.Logic.Handler.Ctx do
       )
 
     x
+  end
+
+  def set_moderation_chat_state!(ctx, state) do
+    :ok = CuteFemBot.Persistence.set_moderation_chat_state(deps_persistence(ctx), state)
   end
 end

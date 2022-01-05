@@ -22,7 +22,7 @@ defmodule CuteFemBot.Persistence.State do
         %Suggestion{file_id: file_id} = suggestion
       ) do
     if Map.has_key?(unapproved, file_id) do
-      :duplication
+      {:duplication, state}
     else
       {
         :ok,
@@ -33,13 +33,16 @@ defmodule CuteFemBot.Persistence.State do
 
   def bind_moderation_message_to_suggestion(state, msg_id, file_id) do
     if not Map.has_key?(state.unapproved, file_id) do
-      :not_found
+      {:not_found, state}
     else
-      Map.update!(state, :unapproved, fn map ->
-        Map.update!(map, file_id, fn %Suggestion{} = item ->
-          Suggestion.bind_moderation_msg(item, msg_id)
+      {
+        :ok,
+        Map.update!(state, :unapproved, fn map ->
+          Map.update!(map, file_id, fn %Suggestion{} = item ->
+            Suggestion.bind_moderation_msg(item, msg_id)
+          end)
         end)
-      end)
+      }
     end
   end
 
@@ -79,7 +82,7 @@ defmodule CuteFemBot.Persistence.State do
   def approve(state, file_id) do
     case Map.pop(state.unapproved, file_id) do
       {nil, _} ->
-        :not_found
+        {:not_found, state}
 
       {data, unapproved} ->
         {
@@ -96,7 +99,7 @@ defmodule CuteFemBot.Persistence.State do
   def reject(state, file_id) do
     case Map.pop(state.unapproved, file_id) do
       {nil, _} ->
-        :not_found
+        {:not_found, state}
 
       {_, unapproved} ->
         {:ok, %Self{state | unapproved: unapproved}}

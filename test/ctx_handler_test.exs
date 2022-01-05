@@ -106,6 +106,21 @@ defmodule ContextFallTest do
   test "error is raised during the handling" do
     result = CtxHandler.handle(HandlerModA, ctx_factory(:male, 20) |> Map.put(:error, true))
 
-    assert {:error, :raised, %RuntimeError{message: "Test error"}, _state} = result
+    assert {:error, :raised, %RuntimeError{message: "Test error"}, _trace, _state} = result
+  end
+
+  test "raised error: state contains correct path" do
+    {:error, :raised, _err, _trace, %State{path: path}} =
+      CtxHandler.handle(HandlerModA, ctx_factory(:male, 20) |> Map.put(:error, true))
+
+    assert path == [
+             {HandlerModA, :gender_greeting},
+             {HandlerModA, :greet_male},
+             {HandlerModA, :determine_rating},
+             {HandlerModA, :go_to_mod_b},
+             {HandlerModB, :entry},
+             {HandlerModB, :empty_handler},
+             {HandlerModA, :maybe_error}
+           ]
   end
 end

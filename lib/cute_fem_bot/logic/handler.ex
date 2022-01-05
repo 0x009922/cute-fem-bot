@@ -7,6 +7,8 @@ defmodule CuteFemBot.Logic.Handler do
   alias CuteFemBot.Telegram.Types.Message
   alias CuteFemBot.Config
 
+  require Logger
+
   def start_link(opts) do
     gen_opts = Keyword.take(opts, [:name])
     init_opts = Keyword.take(opts, [:api, :persistence, :config, :posting])
@@ -32,8 +34,11 @@ defmodule CuteFemBot.Logic.Handler do
   @impl true
   def handle_cast({:handle_update, update}, state) do
     case CtxHandler.handle(Middleware, Ctx.new(state.deps, update)) do
-      {:ok, _} -> nil
-      {:error, :raised, err, handler_state} -> handle_error(state.deps, handler_state, err)
+      {:ok, _} ->
+        nil
+
+      {:error, :raised, err, trace, handler_state} ->
+        handle_error(state.deps, handler_state, err, trace)
     end
 
     {:noreply, state}
@@ -43,7 +48,11 @@ defmodule CuteFemBot.Logic.Handler do
     GenServer.cast(handler, {:handle_update, update})
   end
 
-  defp handle_error(deps, state, err) do
+  defp handle_error(deps, state, err, trace) do
+    err_formatted = Exception.format(:error, err, trace)
+    state_path_formatted = inspect(state.path)
+    Logger.error("Error during update handling: #{err_formatted} | path: #{state_path_formatted}")
+
     inspect_data =
       inspect(
         %{
