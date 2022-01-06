@@ -2,19 +2,22 @@ import Config
 
 is_prod? = Mix.env() == :prod
 
-logger_compile_time_purge_matching =
-  if is_prod? do
-    [
-      [level_lower_than: :info]
-    ]
-  else
-    []
-  end
+if is_prod? do
+  config :logger,
+    backends: [:console],
+    compile_time_purge_matching: [level_lower_than: :info]
 
-config :logger,
-  backends: [:console],
-  compile_time_purge_matching: logger_compile_time_purge_matching
+  config :logger, :console,
+    format: "$date $time $metadata[$level] $levelpad$message\n",
+    metadata: [:file, :line, :mfa, :crash_reason, :pid, :registered_name]
+else
+  config :logger,
+    backends: [:console]
 
-config :logger, :console,
-  format: "$date $time $metadata[$level] $levelpad$message\n",
-  metadata: [:file, :line, :mfa, :crash_reason, :pid, :registered_name]
+  config :logger, :console,
+    format: "$date $time $metadata[$level] $levelpad$message\n",
+    metadata: [:mfa, :crash_reason]
+end
+
+config :plug_cowboy,
+  log_exceptions_with_status_code: [400..599]

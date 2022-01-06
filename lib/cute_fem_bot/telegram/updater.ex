@@ -32,4 +32,23 @@ defmodule CuteFemBot.Telegram.Updater do
 
     Supervisor.init(children, strategy: :one_for_one)
   end
+
+  def init([:webhook | opts]) do
+    deps = Keyword.fetch!(opts, :deps)
+    handler = Keyword.fetch!(opts, :handler_fun)
+
+    children = [
+      {CuteFemBot.Telegram.Updater.Webhook.TaskSet, deps: deps},
+      {
+        CuteFemBot.Telegram.Updater.Webhook.Listener,
+        %{
+          config: deps.config,
+          dispatcher: Dispatcher
+        }
+      },
+      {Dispatcher, [handler, name: Dispatcher]}
+    ]
+
+    Supervisor.init(children, strategy: :one_for_one)
+  end
 end

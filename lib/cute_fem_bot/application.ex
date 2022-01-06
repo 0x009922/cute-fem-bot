@@ -57,15 +57,30 @@ defmodule CuteFemBot.Application do
           config: CuteFemBot.Config.State
         }
       },
+
+      # use it for webhook
       {
         CuteFemBot.Telegram.Updater,
         [
-          :long_polling,
-          interval: 1_000,
-          handler_fun: handle_update_fun,
-          api: CuteFemBot.Telegram.Api
+          :webhook,
+          deps: %{
+            api: CuteFemBot.Telegram.Api,
+            config: CuteFemBot.Config.State
+          },
+          handler_fun: handle_update_fun
         ]
       }
+
+      # use it for long-polling
+      # {
+      #   CuteFemBot.Telegram.Updater,
+      #   [
+      #     :long_polling,
+      #     interval: 1_000,
+      #     handler_fun: handle_update_fun,
+      #     api: CuteFemBot.Telegram.Api
+      #   ]
+      # }
     ]
 
     opts = [strategy: :one_for_one, name: CuteFemBot.Supervisor]

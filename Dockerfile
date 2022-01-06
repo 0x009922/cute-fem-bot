@@ -7,7 +7,6 @@ RUN mix do local.hex --force, local.rebar --force
 COPY mix.exs mix.lock ./
 COPY config config
 RUN mix deps.get
-RUN mix deps.compile
 
 COPY lib lib
 COPY config.yml ./
