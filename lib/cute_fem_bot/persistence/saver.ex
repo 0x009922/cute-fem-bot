@@ -1,5 +1,5 @@
 defmodule CuteFemBot.Persistence.Saver do
-  @filename "./state"
+  @filename "./data/state"
 
   use GenServer
   require Logger

@@ -42,7 +42,10 @@ defmodule CuteFemBot.Telegram.Api do
          )
          |> Finch.request(finch) do
       {:error, err} ->
-        Logger.error("Error occured while making request to Telegram: #{inspect(err)}")
+        Logger.error(
+          "Error occured while making request to Telegram: #{inspect(err)}; Request body: #{body}"
+        )
+
         :error
 
       {:ok, %Finch.Response{body: body}} ->
