@@ -5,8 +5,10 @@ ENV PORT=3000
 RUN mix do local.hex --force, local.rebar --force
 
 COPY mix.exs mix.lock ./
-COPY config config
 RUN mix deps.get
+
+COPY config config
+RUN MIX_ENV=prod mix deps.compile
 
 COPY lib lib
 COPY config.yml ./
