@@ -5,7 +5,7 @@ is_prod? = Mix.env() == :prod
 if is_prod? do
   config :logger,
     backends: [:console],
-    compile_time_purge_matching: [level_lower_than: :info]
+    compile_time_purge_matching: [[level_lower_than: :info]]
 
   config :logger, :console,
     format: "$date $time $metadata[$level] $levelpad$message\n",
