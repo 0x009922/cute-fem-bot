@@ -14,8 +14,7 @@ defmodule CuteFemBot.Application do
           cfg
 
         {:error, err} ->
-          Logger.emergency("Unable to read config: #{inspect(err)}")
-          System.stop(1)
+          fatal_exit("Unable to read config: #{inspect(err)}")
       end
 
     handle_update_fun = fn update ->
@@ -57,34 +56,50 @@ defmodule CuteFemBot.Application do
           config: CuteFemBot.Config.State
         }
       },
-
-      # use it for webhook
-      {
-        CuteFemBot.Telegram.Updater,
-        [
-          :webhook,
-          deps: %{
-            api: CuteFemBot.Telegram.Api,
-            config: CuteFemBot.Config.State
-          },
-          handler_fun: handle_update_fun
-        ]
-      }
-
-      # use it for long-polling
-      # {
-      #   CuteFemBot.Telegram.Updater,
-      #   [
-      #     :long_polling,
-      #     interval: 1_000,
-      #     handler_fun: handle_update_fun,
-      #     api: CuteFemBot.Telegram.Api
-      #   ]
-      # }
+      updater_spec(%{
+        api: CuteFemBot.Telegram.Api,
+        config: CuteFemBot.Config.State,
+        handler_fun: handle_update_fun
+      })
     ]
 
     opts = [strategy: :one_for_one, name: CuteFemBot.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp updater_spec(%{api: api, config: config, handler_fun: handler}) do
+    case Application.get_env(:cute_fem_bot, :update_approach, "long-polling") do
+      "long-polling" ->
+        {
+          CuteFemBot.Telegram.Updater,
+          [
+            :long_polling,
+            interval: 1_000,
+            handler_fun: handler,
+            api: api
+          ]
+        }
+
+      "webhook" ->
+        {
+          CuteFemBot.Telegram.Updater,
+          [
+            :webhook,
+            deps: %{
+              api: api,
+              config: config
+            },
+            handler_fun: handler
+          ]
+        }
+
+      invalid ->
+        fatal_exit("Invalid update_approach param: #{inspect(invalid)}")
+    end
+  end
+
+  defp fatal_exit(message) do
+    Logger.emergency(message)
   end
 
   # doesn't work btw
