@@ -2,6 +2,8 @@ defmodule CuteFemBot.Logic.Posting do
   use GenServer
   require Logger
 
+  alias CuteFemBot.Core.Suggestion
+
   def start_link(opts) do
     {deps, opts} = Keyword.pop!(opts, :deps)
 
@@ -43,21 +45,26 @@ defmodule CuteFemBot.Logic.Posting do
       Logger.debug("Posting files: #{inspect(queue)}")
 
       queue
-      |> Enum.each(fn {ty, file_id} ->
-        method = "send" <> (Atom.to_string(ty) |> String.capitalize())
+      |> Enum.each(fn %Suggestion{file_id: file_id, user_id: _user_id} = suggestion ->
+        %{method_name: method, body_part: body_part} = Suggestion.to_send(suggestion)
+
+        # user = CuteFemBot.Logic.Util.user_html_link_using_meta(deps.persistence, user_id)
+        # caption = "Предложка: #{user}"
 
         CuteFemBot.Telegram.Api.request!(deps.api,
           method_name: method,
           body:
             %{
-              "chat_id" => chat_id
+              "chat_id" => chat_id,
+              # "caption" => caption,
+              "parse_mode" => "html"
             }
-            |> Map.put(Atom.to_string(ty), file_id)
+            |> Map.merge(body_part)
         )
 
         CuteFemBot.Persistence.files_posted(deps.persistence, [file_id])
 
-        Logger.info("File #{file_id} posted!")
+        Logger.info("File #{file_id} is posted!")
       end)
 
       schedule_posting(deps.persistence, key_truth)

@@ -1,4 +1,4 @@
-defmodule CuteFemBot.Logic.Handler.Util do
+defmodule CuteFemBot.Logic.Util do
   alias CuteFemBot.Persistence
 
   def user_html_link_using_meta(persistence, user_id) do

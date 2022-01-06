@@ -68,7 +68,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Queue do
 
       set_chat_state!(ctx, {:queue, {:start, msg["message_id"]}})
     else
-      send_msg!(ctx, Message.with_text("Очередь пуста :<"))
+      send_msg!(ctx, Message.with_text("Очередь пуста :<" |> CuteFemBot.Util.escape_html()))
       set_chat_state!(ctx, nil)
     end
   end

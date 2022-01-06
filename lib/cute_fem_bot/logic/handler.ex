@@ -50,14 +50,14 @@ defmodule CuteFemBot.Logic.Handler do
 
   defp handle_error(deps, state, err, trace) do
     err_formatted = Exception.format(:error, err, trace)
+    err_formatted_escaped = err_formatted |> CuteFemBot.Util.escape_html()
     state_path_formatted = inspect(state.path)
     Logger.error("Error during update handling: #{err_formatted} | path: #{state_path_formatted}")
 
     inspect_data =
       inspect(
         %{
-          state: state,
-          error: err
+          state: state
         },
         pretty: true,
         syntax_colors: []
@@ -67,7 +67,9 @@ defmodule CuteFemBot.Logic.Handler do
     text = """
     Хозяин, у меня ошибка во время обработки апдейта.
 
-    <pre>#{inspect_data}</pre>
+    Ошибка: <pre>#{err_formatted_escaped}</pre>
+
+    <pre><code class=\"language-elixir\">#{inspect_data}</code></pre>
     """
 
     %Config{master_chat_id: chat_id} = Config.State.get(deps.config)

@@ -178,7 +178,6 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Schedule do
   end
 
   defp schedule_show(ctx) do
-    # TODO edit existing message
     current_posting = CuteFemBot.Persistence.get_posting(ctx.deps.persistence)
 
     formatted =
@@ -196,14 +195,14 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Schedule do
                        posting,
                        DateTime.to_naive(DateTime.utc_now())
                      ),
-                   do: CuteFemBot.Util.format_datetime(x)
+                   do: CuteFemBot.Util.format_datetime_msk(x)
 
             {:ok, flush} = Posting.format_flush(posting)
 
             """
             Крон: <code>#{cron}</code>
             Flush: #{flush}
-            Следующий пост: #{next_fire} (UTC)
+            Следующий пост: #{next_fire}
 
             <i>tip: расшифровать и составить крон можешь на https://crontab.guru/</i>
             """
@@ -213,13 +212,25 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Schedule do
           end
       end
 
-    send_msg!(ctx, %{
-      "text" => """
-      <b>Текущее расписание</b>
+    {:schedule, {:start, msg_id}} = ctx.moderation_chat_state
 
-      #{formatted}
-      """,
-      "parse_mode" => "html"
-    })
+    Api.request(Ctx.deps_api(ctx),
+      method_name: "editMessageText",
+      body: %{
+        "chat_id" => Ctx.conf_moderation_chat_id(ctx),
+        "message_id" => msg_id,
+        "text" => """
+        <b>Текущее расписание</b>
+
+        #{formatted}
+
+        <i>tip: команда /schedule завершена. Чтобы настроить расписание, её нужно вызвать заново.</i>
+        """,
+        "parse_mode" => "html",
+        "disable_web_page_preview" => true
+      }
+    )
+
+    set_chat_state!(ctx, nil)
   end
 end

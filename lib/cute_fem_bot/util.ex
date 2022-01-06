@@ -52,8 +52,9 @@ defmodule CuteFemBot.Util do
     end
   end
 
-  def format_datetime(%NaiveDateTime{} = dt) do
-    Calendar.strftime(dt, "%d.%m.%Y %H:%M")
+  def format_datetime_msk(%NaiveDateTime{} = dt) do
+    NaiveDateTime.add(dt, 60 * 60 * 3, :second)
+    |> Calendar.strftime("%H:%M %d.%m.%Y (MSK)")
   end
 
   def find_all_commands(%{"text" => text}) do

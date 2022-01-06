@@ -2,7 +2,7 @@ defmodule CuteFemBotLogicHandlerUtilTest do
   use ExUnit.Case
 
   alias CuteFemBot.Persistence
-  import CuteFemBot.Logic.Handler.Util
+  import CuteFemBot.Logic.Util
 
   setup do
     pid = start_supervised!(Persistence)

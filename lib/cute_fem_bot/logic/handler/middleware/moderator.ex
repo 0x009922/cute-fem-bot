@@ -7,7 +7,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator do
   alias CuteFemBot.Telegram.Api
   alias CuteFemBot.Persistence
   alias CuteFemBot.Logic.Handler.Ctx
-  alias CuteFemBot.Logic.Handler
+  alias CuteFemBot.Logic
 
   import __MODULE__.Shared
   alias __MODULE__.Queue
@@ -17,11 +17,11 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator do
 
   def main() do
     [
+      :handle_suggestions_callbacks,
       :fetch_chat_state,
       :find_commands_in_message,
       :handle_unban_commands,
       :handle_commands,
-      :handle_suggestions_callbacks,
       :handle_queue,
       :handle_schedule,
       :skip
@@ -94,15 +94,14 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator do
           unbanned_formatted =
             Enum.map(
               unban_user_ids,
-              &Handler.Util.user_html_link_using_meta(Ctx.deps_persistence(ctx), &1)
+              &Logic.Util.user_html_link_using_meta(Ctx.deps_persistence(ctx), &1)
             )
             |> Enum.join("\n")
 
           send_msg!(
             ctx,
             Message.with_text("""
-            Разбанил пользователей:
-
+            Разбанил:
             #{unbanned_formatted}
             """)
           )
@@ -216,7 +215,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator do
       if length(banned) > 0 do
         banned_formatted =
           Enum.map(banned, fn id ->
-            user_formatted = Handler.Util.user_html_link_using_meta(pers, id)
+            user_formatted = Logic.Util.user_html_link_using_meta(pers, id)
             unban_cmd = "/unban_#{id}"
             "#{user_formatted} #{unban_cmd}"
           end)

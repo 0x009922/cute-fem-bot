@@ -59,6 +59,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware do
         {:cont, :sub_mod, Suggestor, Map.put(ctx, :update, update)}
 
       :skip ->
+        Logger.info("Update is ignored: #{inspect(ctx.update)}")
         :halt
 
       {:bad_callback_query, %{"id" => query_id}} ->

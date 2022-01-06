@@ -46,9 +46,9 @@ defmodule CuteFemBotUtilTest do
     end
   end
 
-  describe "format_datetime" do
+  describe "format_datetime_msk" do
     test "formats" do
-      assert format_datetime(~N[2020-10-25 10:00:00.123]) == "25.10.2020 10:00"
+      assert format_datetime_msk(~N[2020-10-25 10:00:00.123]) == "13:00 25.10.2020 (MSK)"
     end
   end
 
