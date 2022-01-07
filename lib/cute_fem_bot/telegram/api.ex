@@ -21,15 +21,38 @@ defmodule CuteFemBot.Telegram.Api do
 
   defp make_request(%Context{finch: finch, config: cfg}, opts) do
     method_name = Keyword.fetch!(opts, :method_name)
-
-    body =
-      case Keyword.get(opts, :body, nil) do
-        nil -> nil
-        x when is_binary(x) -> x
-        x -> JSON.encode!(x)
-      end
-
+    body = Keyword.get(opts, :body, nil)
     %CuteFemBot.Config{api_token: token} = CuteFemBot.Config.State.get(cfg)
+
+    request_data = fn -> "method: #{method_name}; body: #{inspect(body)}" end
+
+    case do_request_with_retries(finch, token, method_name, body) do
+      {:ok, _} = ok ->
+        ok
+
+      {:error, :http, err} ->
+        Logger.error(
+          "HTTP Error while making request to Telegram: #{inspect(err)}; #{request_data.()}"
+        )
+
+        :error
+
+      {:error, :telegram, description} ->
+        Logger.error("Telegram error response: #{inspect(description)}; #{request_data.()}")
+        :error
+
+      {:error, :telegram_unknown, response} ->
+        Logger.error("Telegram confusing response: #{inspect(response)}; #{request_data.()}")
+        :error
+    end
+  end
+
+  defp prepare_body(nil), do: nil
+  defp prepare_body(str) when is_binary(str), do: str
+  defp prepare_body(body), do: JSON.encode!(body)
+
+  defp do_request_with_retries(finch, token, method_name, body \\ nil) do
+    body = prepare_body(body)
 
     Logger.debug("Making request to Telegram: #{method_name}; body: #{inspect(body)}")
 
@@ -42,24 +65,23 @@ defmodule CuteFemBot.Telegram.Api do
          )
          |> Finch.request(finch) do
       {:error, err} ->
-        Logger.error(
-          "Error occured while making request to Telegram: #{inspect(err)}; Request body: #{body}"
-        )
-
-        :error
+        {:error, :http, err}
 
       {:ok, %Finch.Response{body: body}} ->
         case JSON.decode!(body) do
           %{"ok" => true, "result" => result} ->
             {:ok, result}
 
+          %{"ok" => false, "parameters" => %{"retry_after" => seconds}} ->
+            # retrying
+            Process.sleep(:timer.seconds(seconds))
+            do_request_with_retries(finch, token, method_name, body)
+
           %{"ok" => false, "description" => desc} ->
-            Logger.error("Telegram respond with an error: #{desc}")
-            :error
+            {:error, :telegram, desc}
 
           unknown_body ->
-            Logger.error("Unable to parse Telegram response: #{inspect(unknown_body)}")
-            :error
+            {:error, :telegram_unknown, unknown_body}
         end
     end
   end
