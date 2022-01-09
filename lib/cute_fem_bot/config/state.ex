@@ -1,17 +1,14 @@
 defmodule CuteFemBot.Config.State do
-  @moduledoc """
-  Agent with a config to access it at runtime
-  """
-
-  use Agent
-  require Logger
-
-  def start_link([%CuteFemBot.Config{} = cfg | opts]) do
-    Logger.info("Starting Config State Agent")
-    Agent.start_link(fn -> cfg end, opts)
+  def init(%CuteFemBot.Config{} = cfg) do
+    ref = :ets.new(CuteFemBot.Config.State, [:set, :protected])
+    :ets.insert(ref, {:cfg, cfg})
+    {:ok, ref}
   end
 
-  def get(name) do
-    Agent.get(name, fn x -> x end)
+  @spec lookup!(atom | :ets.tid()) :: CuteFemBot.Config.t()
+  def lookup!(ref) do
+    case :ets.lookup(ref, :cfg) do
+      [{:cfg, %CuteFemBot.Config{} = cfg}] -> cfg
+    end
   end
 end

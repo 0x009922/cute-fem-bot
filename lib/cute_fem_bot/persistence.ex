@@ -97,6 +97,12 @@ defmodule CuteFemBot.Persistence do
     end)
   end
 
+  def cancel_approved(pers, file_id) do
+    manipulate_state(pers, fn %State{} = state ->
+      {:ok, State.cancel_approved(state, file_id)}
+    end)
+  end
+
   def files_posted(pers, files_list) do
     manipulate_state(pers, fn %State{} = state ->
       {:ok, State.files_posted(state, files_list)}
@@ -146,15 +152,15 @@ defmodule CuteFemBot.Persistence do
     end)
   end
 
-  def get_moderation_chat_state(pers) do
+  def get_admin_chat_state(pers, admin_id) do
     manipulate_state(pers, fn %State{} = state ->
-      {state.mod_chat_state, state}
+      {State.get_admin_chat_state(state, admin_id), state}
     end)
   end
 
-  def set_moderation_chat_state(pers, new_state) do
+  def set_admin_chat_state(pers, admin_id, new_state) do
     manipulate_state(pers, fn %State{} = state ->
-      {:ok, %State{state | mod_chat_state: new_state}}
+      {:ok, State.set_admin_chat_state(state, admin_id, new_state)}
     end)
   end
 end

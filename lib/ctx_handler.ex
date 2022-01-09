@@ -33,7 +33,13 @@ defmodule CtxHandler do
   end
 
   defp get_module_main(mod) do
-    apply(mod, :main, []) |> Enum.map(fn fun -> {mod, fun} end)
+    apply(mod, :main, [])
+    |> Enum.map(fn entry ->
+      case entry do
+        {_, _} = full -> full
+        fun -> {mod, fun}
+      end
+    end)
   end
 
   defp walk([], state) do

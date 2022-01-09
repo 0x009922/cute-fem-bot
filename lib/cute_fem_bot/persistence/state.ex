@@ -10,7 +10,7 @@ defmodule CuteFemBot.Persistence.State do
     field(:approved_queue, list(), default: [])
     field(:banned, MapSet.t(), default: MapSet.new())
     field(:posting, CuteFemBot.Core.Posting.t(), default: nil)
-    field(:mod_chat_state, any(), default: nil)
+    field(:admin_states, any(), default: %{})
   end
 
   def update_user_meta(%Self{users_meta: x} = state, %{"id" => id} = data) do
@@ -114,5 +114,18 @@ defmodule CuteFemBot.Persistence.State do
             file_id not in ids
           end)
     }
+  end
+
+  def get_admin_chat_state(%Self{} = self, id) do
+    Map.get(self.admin_states, id)
+  end
+
+  def set_admin_chat_state(%Self{} = self, id, state) do
+    %Self{self | admin_states: Map.put(self.admin_states, id, state)}
+  end
+
+  def cancel_approved(%Self{} = self, file_id) do
+    # identical to "posted" behavior
+    files_posted(self, [file_id])
   end
 end

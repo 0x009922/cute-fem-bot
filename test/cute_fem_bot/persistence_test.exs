@@ -96,4 +96,23 @@ defmodule CuteFemBotPersistenceTest do
 
     assert Persistence.get_approved_queue(pers) == []
   end
+
+  test "setting & getting admin chat states", %{pers: pers} do
+    assert Persistence.get_admin_chat_state(pers, 55) == nil
+    assert Persistence.set_admin_chat_state(pers, 55, :test) == :ok
+    assert Persistence.get_admin_chat_state(pers, 55) == :test
+    assert Persistence.get_admin_chat_state(pers, 99) == nil
+    assert Persistence.set_admin_chat_state(pers, 55, :foo) == :ok
+    assert Persistence.get_admin_chat_state(pers, 55) == :foo
+  end
+
+  test "cancelling approved suggestion", %{pers: pers} do
+    suggestion = Suggestion.new(:photo, "nya", 9919)
+
+    Persistence.add_new_suggestion(pers, suggestion)
+    Persistence.approve_media(pers, "nya")
+
+    assert Persistence.cancel_approved(pers, "nya") == :ok
+    assert Persistence.get_approved_queue(pers) == []
+  end
 end

@@ -17,12 +17,13 @@ defmodule CuteFemBot.Application do
           fatal_exit("Unable to read config: #{inspect(err)}")
       end
 
+    {:ok, cfg_ref} = CuteFemBot.Config.State.init(cfg)
+
     handle_update_fun = fn update ->
       CuteFemBot.Logic.Handler.handle(CuteFemBot.Logic.Handler, update)
     end
 
     children = [
-      {CuteFemBot.Config.State, [cfg, name: CuteFemBot.Config.State]},
       {CuteFemBot.Persistence, name: CuteFemBot.Persistence},
       {
         CuteFemBot.Persistence.Saver,
@@ -30,35 +31,35 @@ defmodule CuteFemBot.Application do
       },
       {
         CuteFemBot.Telegram.Api.Supervisor,
-        api: CuteFemBot.Telegram.Api, config: CuteFemBot.Config.State
+        api: CuteFemBot.Telegram.Api, config: cfg_ref
       },
       {
         CuteFemBot.Logic.Handler,
         name: CuteFemBot.Logic.Handler,
         api: CuteFemBot.Telegram.Api,
         persistence: CuteFemBot.Persistence,
-        config: CuteFemBot.Config.State,
+        config: cfg_ref,
         posting: CuteFemBot.Logic.Posting
       },
-      {
-        CuteFemBot.Logic.Posting,
-        name: CuteFemBot.Logic.Posting,
-        deps: %{
-          api: CuteFemBot.Telegram.Api,
-          persistence: CuteFemBot.Persistence,
-          config: CuteFemBot.Config.State
-        }
-      },
+      # {
+      #   CuteFemBot.Logic.Posting,
+      #   name: CuteFemBot.Logic.Posting,
+      #   deps: %{
+      #     api: CuteFemBot.Telegram.Api,
+      #     persistence: CuteFemBot.Persistence,
+      #     config: CuteFemBot.Config.State
+      #   }
+      # },
       {
         CuteFemBot.Logic.Tasks.SetCommands,
         deps: %{
           api: CuteFemBot.Telegram.Api,
-          config: CuteFemBot.Config.State
+          config: cfg_ref
         }
       },
       updater_spec(%{
         api: CuteFemBot.Telegram.Api,
-        config: CuteFemBot.Config.State,
+        config: cfg_ref,
         handler_fun: handle_update_fun
       })
     ]
@@ -67,34 +68,34 @@ defmodule CuteFemBot.Application do
     Supervisor.start_link(children, opts)
   end
 
-  defp updater_spec(%{api: api, config: config, handler_fun: handler}) do
-    case Application.get_env(:cute_fem_bot, :update_approach, "long-polling") do
-      "long-polling" ->
+  defp updater_spec(%{api: api, config: cfg_ref, handler_fun: handler}) do
+    %CuteFemBot.Config{long_polling_interval: lp_interval, updates_approach: approach} =
+      CuteFemBot.Config.State.lookup!(cfg_ref)
+
+    case approach do
+      :long_polling ->
         {
           CuteFemBot.Telegram.Updater,
           [
             :long_polling,
-            interval: 1_000,
+            interval: lp_interval,
             handler_fun: handler,
             api: api
           ]
         }
 
-      "webhook" ->
+      :webhook ->
         {
           CuteFemBot.Telegram.Updater,
           [
             :webhook,
             deps: %{
               api: api,
-              config: config
+              config: cfg_ref
             },
             handler_fun: handler
           ]
         }
-
-      invalid ->
-        fatal_exit("Invalid update_approach param: #{inspect(invalid)}")
     end
   end
 

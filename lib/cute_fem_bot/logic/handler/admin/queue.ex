@@ -1,11 +1,11 @@
-defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Queue do
+defmodule CuteFemBot.Logic.Handler.Admin.Queue do
   alias CuteFemBot.Telegram.Types.Message
   alias CuteFemBot.Telegram.Api
   alias CuteFemBot.Persistence
   alias CuteFemBot.Logic.Handler.Ctx
   alias CuteFemBot.Core.Suggestion
 
-  import CuteFemBot.Logic.Handler.Middleware.Moderator.Shared
+  import CuteFemBot.Logic.Handler.Admin.Shared
 
   defmodule Observing do
     use TypedStruct
@@ -41,6 +41,14 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Queue do
     defp upd_index(%Self{} = self, fun) do
       Map.update!(self, :current_queue_index, fun)
     end
+
+    def btn_key_to_data(key) when key in [:inc, :dec, :cancel, :cancel_approved],
+      do: Atom.to_string(key)
+
+    def btn_data_to_key(data) when data in ["inc", "dec", "cancel", "cancel_approved"],
+      do: {:ok, String.to_existing_atom(data)}
+
+    def btn_data_to_key(_), do: :error
   end
 
   def command_queue(ctx) do
@@ -59,7 +67,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Queue do
           |> Message.set_reply_markup(:inline_keyboard_markup, [
             [
               %{
-                "text" => "Глянуть, чё там",
+                "text" => "Посмотреть",
                 "callback_data" => "observe"
               }
             ]
@@ -68,17 +76,13 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Queue do
 
       set_chat_state!(ctx, {:queue, {:start, msg["message_id"]}})
     else
-      send_msg!(ctx, Message.with_text("Очередь пуста :<" |> CuteFemBot.Util.escape_html()))
+      send_msg!(ctx, Message.with_text(text_queue_is_empty()))
       set_chat_state!(ctx, nil)
     end
   end
 
-  def main() do
-    [:handle]
-  end
-
   def handle(ctx) do
-    with {:queue, state} <- ctx.moderation_chat_state do
+    with {:queue, state} <- chat_state(ctx) do
       case state do
         {:start, message_id} ->
           # we are waiting for the "observe" callback query, and only for it
@@ -115,26 +119,37 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Queue do
                   },
                   "data" => query_data
                 } ->
-                  case query_data do
-                    "inc" ->
-                      apply_observing_update(ctx, state |> Observing.inc())
-                      :ok
+                  with {:ok, key} <- query_data |> Observing.btn_data_to_key() do
+                    case key do
+                      :inc ->
+                        apply_observing_update(ctx, state |> Observing.inc())
 
-                    "dec" ->
-                      apply_observing_update(ctx, state |> Observing.dec())
-                      :ok
+                      :dec ->
+                        apply_observing_update(ctx, state |> Observing.dec())
 
-                    "cancel" ->
-                      observing_delete_preview(ctx, state)
-                      command_cancel(ctx)
-                      :ok
+                      :cancel ->
+                        observing_delete_preview(ctx, state)
+                        command_cancel(ctx)
 
-                    _ ->
-                      :fail
+                      :cancel_approved ->
+                        pers = Ctx.deps_persistence(ctx)
+                        queue = Persistence.get_approved_queue(pers)
+
+                        suggestion =
+                          case Enum.at(queue, state.current_queue_index) do
+                            %Suggestion{} = x -> x
+                          end
+
+                        Persistence.cancel_approved(pers, suggestion.file_id)
+
+                        apply_observing_update(ctx, state)
+                    end
+
+                    :ok
                   end
 
                 _ ->
-                  :fail
+                  :error
               end
 
               Api.answer_callback_query(Ctx.deps_api(ctx), query_id)
@@ -168,7 +183,14 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Queue do
     if queue_len == 0 do
       # informing about empty queue, setting state to nil
       observing_delete_preview(ctx, state)
-      observing_update_control(ctx, state, "В очереди ничего больше нет :<", nil)
+
+      observing_update_control(
+        ctx,
+        state,
+        text_queue_is_empty(),
+        nil
+      )
+
       set_chat_state!(ctx, nil)
     else
       # normalizing index
@@ -228,17 +250,20 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Queue do
                 idx == queue_len - 1 -> [:dec]
                 true -> [:dec, :inc]
               end) do
-        [:cancel | inc_dec]
+        [:cancel | [:cancel_approved | inc_dec]]
       end
       |> Enum.map(fn btn ->
-        {text, data} =
+        btn_data = Observing.btn_key_to_data(btn)
+
+        btn_caption =
           case btn do
-            :cancel -> {"Отмена", "cancel"}
-            :inc -> {"»", "inc"}
-            :dec -> {"«", "dec"}
+            :cancel -> "Отмена"
+            :inc -> "»"
+            :dec -> "«"
+            :cancel_approved -> "Не ня"
           end
 
-        %{"text" => text, "callback_data" => data}
+        %{"text" => btn_caption, "callback_data" => btn_data}
       end)
 
     %{
@@ -250,7 +275,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Queue do
     do: state
 
   defp observing_delete_preview(ctx, %Observing{preview_msg_id: msg} = state) do
-    Api.delete_message!(Ctx.deps_api(ctx), Ctx.conf_moderation_chat_id(ctx), msg)
+    Api.delete_message!(Ctx.deps_api(ctx), get_admin_id(ctx), msg)
     Observing.update_preview_message(state, nil)
   end
 
@@ -263,7 +288,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Queue do
         Message.with_text(text)
         |> Message.set_parse_mode("html")
         |> Message.set_reply_markup(:inline_keyboard_markup, reply_markup)
-        |> Message.set_chat_id(Ctx.conf_moderation_chat_id(ctx))
+        |> Message.set_chat_id(get_admin_id(ctx))
       )
 
     Observing.update_control_message(state, new_message_id)
@@ -274,7 +299,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Queue do
     Api.request!(Ctx.deps_api(ctx),
       method_name: "editMessageText",
       body: %{
-        "chat_id" => Ctx.conf_moderation_chat_id(ctx),
+        "chat_id" => get_admin_id(ctx),
         "message_id" => msg,
         "text" => text,
         "parse_mode" => "html",
@@ -294,11 +319,15 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Queue do
         body:
           media_body
           |> Map.merge(%{
-            "chat_id" => Ctx.conf_moderation_chat_id(ctx)
+            "chat_id" => get_admin_id(ctx)
           })
       )
 
     msg_id
+  end
+
+  defp text_queue_is_empty() do
+    "Очередь пуста :<" |> CuteFemBot.Util.escape_html()
   end
 
   defp norm_queue_index(len, _) when len <= 0, do: raise("Invalid len: #{len}")

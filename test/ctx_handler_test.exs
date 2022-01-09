@@ -10,6 +10,7 @@ defmodule ContextFallTest do
         :determine_rating,
         :go_to_mod_b,
         :maybe_error,
+        {ContextFallTest.HandlerModC, :headless_entry},
         :return_ctx
       ]
     end
@@ -64,7 +65,13 @@ defmodule ContextFallTest do
     end
   end
 
-  defp ctx_factory(gender, age) do
+  defmodule HandlerModC do
+    def headless_entry(ctx) do
+      {:cont, Map.put(ctx, :mod_c_visited, true)}
+    end
+  end
+
+  defp ctx_factory(gender, age) when gender in [:male, :female] do
     %{gender: gender, age: age}
   end
 
@@ -83,9 +90,14 @@ defmodule ContextFallTest do
              CtxHandler.handle(HandlerModA, ctx_factory(:male, 20))
   end
 
-  test "mod b applied to" do
+  test "mod b is applied too" do
     assert {:ok, %State{ctx: %{mod_b_handled_too: true}}} =
              CtxHandler.handle(HandlerModA, ctx_factory(:female, 29))
+  end
+
+  test "mod c is applied too (headless jump)" do
+    assert {:ok, %State{ctx: %{mod_c_visited: true}}} =
+             CtxHandler.handle(HandlerModA, ctx_factory(:male, 20))
   end
 
   test "path is collected correctly" do
@@ -99,6 +111,7 @@ defmodule ContextFallTest do
              {HandlerModB, :entry},
              {HandlerModB, :empty_handler},
              {HandlerModA, :maybe_error},
+             {ContextFallTest.HandlerModC, :headless_entry},
              {HandlerModA, :return_ctx}
            ]
   end

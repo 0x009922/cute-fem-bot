@@ -1,11 +1,11 @@
-defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Schedule do
+defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
   alias CuteFemBot.Core.Posting
   alias CuteFemBot.Telegram.Types.Message
   alias CuteFemBot.Telegram.Api
   alias CuteFemBot.Persistence
   alias CuteFemBot.Logic.Handler.Ctx
 
-  import CuteFemBot.Logic.Handler.Middleware.Moderator.Shared
+  import CuteFemBot.Logic.Handler.Admin.Shared
 
   def command_schedule(ctx) do
     msg =
@@ -25,12 +25,8 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Schedule do
     set_chat_state!(ctx, {:schedule, {:start, msg["message_id"]}})
   end
 
-  def main() do
-    [:handle]
-  end
-
   def handle(ctx) do
-    case ctx.moderation_chat_state do
+    case chat_state(ctx) do
       {:schedule, state} ->
         case state do
           {:start, msg_id} ->
@@ -178,7 +174,7 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Schedule do
   end
 
   defp schedule_show(ctx) do
-    current_posting = CuteFemBot.Persistence.get_posting(ctx.deps.persistence)
+    current_posting = CuteFemBot.Persistence.get_posting(Ctx.deps_persistence(ctx))
 
     formatted =
       case current_posting do
@@ -212,12 +208,12 @@ defmodule CuteFemBot.Logic.Handler.Middleware.Moderator.Schedule do
           end
       end
 
-    {:schedule, {:start, msg_id}} = ctx.moderation_chat_state
+    {:schedule, {:start, msg_id}} = chat_state(ctx)
 
     Api.request(Ctx.deps_api(ctx),
       method_name: "editMessageText",
       body: %{
-        "chat_id" => Ctx.conf_moderation_chat_id(ctx),
+        "chat_id" => get_admin_id(ctx),
         "message_id" => msg_id,
         "text" => """
         <b>Текущее расписание</b>

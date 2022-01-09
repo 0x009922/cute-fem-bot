@@ -40,7 +40,7 @@ defmodule CuteFemBot.Logic.Posting do
 
       queue = CuteFemBot.Persistence.get_approved_queue(deps.persistence) |> Enum.take(count)
       # file_ids = queue |> Enum.map(fn {_ty, file_id} -> file_id end)
-      %CuteFemBot.Config{posting_chat_id: chat_id} = CuteFemBot.Config.State.get(deps.config)
+      %CuteFemBot.Config{posting_chat: chat_id} = CuteFemBot.Config.State.get(deps.config)
 
       Logger.debug("Posting files: #{inspect(queue)}")
 

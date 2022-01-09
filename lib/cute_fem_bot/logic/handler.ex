@@ -1,11 +1,10 @@
 defmodule CuteFemBot.Logic.Handler do
   use GenServer
 
-  alias __MODULE__.Middleware
+  alias __MODULE__.Entry
   alias __MODULE__.Ctx
   alias CuteFemBot.Telegram.Api
   alias CuteFemBot.Telegram.Types.Message
-  alias CuteFemBot.Config
 
   require Logger
 
@@ -33,7 +32,7 @@ defmodule CuteFemBot.Logic.Handler do
 
   @impl true
   def handle_cast({:handle_update, update}, state) do
-    case CtxHandler.handle(Middleware, Ctx.new(state.deps, update)) do
+    case CtxHandler.handle(Entry, Ctx.new(state.deps, update)) do
       {:ok, _} ->
         nil
 
@@ -48,7 +47,7 @@ defmodule CuteFemBot.Logic.Handler do
     GenServer.cast(handler, {:handle_update, update})
   end
 
-  defp handle_error(deps, state, err, trace) do
+  defp handle_error(deps, %CtxHandler.State{} = state, err, trace) do
     err_formatted = Exception.format(:error, err, trace)
     err_formatted_escaped = err_formatted |> CuteFemBot.Util.escape_html()
     state_path_formatted = inspect(state.path)
@@ -57,7 +56,7 @@ defmodule CuteFemBot.Logic.Handler do
     inspect_data =
       inspect(
         %{
-          state: state
+          state_path: state.path
         },
         pretty: true,
         syntax_colors: []
@@ -72,7 +71,7 @@ defmodule CuteFemBot.Logic.Handler do
     <pre><code class=\"language-elixir\">#{inspect_data}</code></pre>
     """
 
-    %Config{master_chat_id: chat_id} = Config.State.get(deps.config)
+    %CuteFemBot.Config{master: chat_id} = CuteFemBot.Config.State.lookup!(deps.config)
 
     {:ok, _} =
       Api.send_message(

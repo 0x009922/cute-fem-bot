@@ -22,7 +22,7 @@ defmodule CuteFemBot.Telegram.Api do
   defp make_request(%Context{finch: finch, config: cfg}, opts) do
     method_name = Keyword.fetch!(opts, :method_name)
     body = Keyword.get(opts, :body, nil)
-    %CuteFemBot.Config{api_token: token} = CuteFemBot.Config.State.get(cfg)
+    %CuteFemBot.Config{api_token: token} = CuteFemBot.Config.State.lookup!(cfg)
 
     request_data = fn -> "method: #{method_name}; body: #{inspect(body)}" end
 
@@ -51,7 +51,7 @@ defmodule CuteFemBot.Telegram.Api do
   defp prepare_body(str) when is_binary(str), do: str
   defp prepare_body(body), do: JSON.encode!(body)
 
-  defp do_request_with_retries(finch, token, method_name, body \\ nil) do
+  defp do_request_with_retries(finch, token, method_name, body) do
     body = prepare_body(body)
 
     Logger.debug("Making request to Telegram: #{method_name}; body: #{inspect(body)}")

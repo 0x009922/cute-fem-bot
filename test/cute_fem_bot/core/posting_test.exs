@@ -78,7 +78,7 @@ defmodule CuteFemBotCorePostingTest do
     assert Posting.compute_next_posting_time(x, now) == {:ok, expected}
   end
 
-  test "computing of next posting time fail to incompleteness" do
+  test "computing of next posting time fail due to incompleteness" do
     assert Posting.compute_next_posting_time(Posting.new(), ~N[2020-10-10 02:02:02]) ==
              {:error, :state_incomplete}
   end
