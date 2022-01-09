@@ -185,20 +185,19 @@ defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
           if Posting.is_complete?(posting) do
             {:ok, cron} = Posting.format_cron(posting)
 
-            next_fire =
-              with {:ok, x} <-
-                     Posting.compute_next_posting_time(
-                       posting,
-                       DateTime.to_naive(DateTime.utc_now())
-                     ),
-                   do: CuteFemBot.Util.format_datetime_msk(x)
+            next_fires =
+              compute_next_fire_time_stamps(posting, 7)
+              |> Stream.map(&CuteFemBot.Util.format_datetime_msk/1)
+              |> Stream.map(fn x -> "<code>#{x}</code>" end)
+              |> Enum.join("\n")
 
             {:ok, flush} = Posting.format_flush(posting)
 
             """
             Крон: <code>#{cron}</code>
             Flush: #{flush}
-            Следующий пост: #{next_fire}
+            Следующие посты:
+            #{next_fires}
 
             <i>tip: расшифровать и составить крон можешь на https://crontab.guru/</i>
             """
@@ -228,5 +227,15 @@ defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
     )
 
     set_chat_state!(ctx, nil)
+  end
+
+  defp compute_next_fire_time_stamps(%Posting{} = posting, count) do
+    {list, _} =
+      Enum.map_reduce(1..count, DateTime.to_naive(DateTime.utc_now()), fn _, stamp ->
+        {:ok, stamp} = Posting.compute_next_posting_time(posting, stamp)
+        {stamp, NaiveDateTime.add(stamp, 30, :second)}
+      end)
+
+    list
   end
 end
