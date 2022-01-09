@@ -17,7 +17,7 @@ sudo docker build -t cute-fem-bot .
 Запуск:
 
 ```shell
-sudo docker run -v cute-fem-bot-state:/data -d cute-fem-bot
+sudo docker run -v /home/username/cute-fem-bot/data:/data -v /usr/share/zoneinfo:/usr/share/zoneinfo -d cute-fem-bot
 ```
 
 
