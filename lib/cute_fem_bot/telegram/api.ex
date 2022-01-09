@@ -74,6 +74,7 @@ defmodule CuteFemBot.Telegram.Api do
 
           %{"ok" => false, "parameters" => %{"retry_after" => seconds}} ->
             # retrying
+            Logger.warning("Telegram told to retry request after #{seconds} seconds...")
             Process.sleep(:timer.seconds(seconds))
             do_request_with_retries(finch, token, method_name, body)
 
@@ -89,7 +90,7 @@ defmodule CuteFemBot.Telegram.Api do
   # client api
 
   def request(api, opts) do
-    GenServer.call(api, {:make_request, opts})
+    GenServer.call(api, {:make_request, opts}, 60_000)
   end
 
   def request!(api, opts) do
