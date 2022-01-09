@@ -46,9 +46,12 @@ defmodule CuteFemBotUtilTest do
     end
   end
 
-  describe "format_datetime_msk" do
+  describe "format_datetime" do
     test "formats" do
-      assert format_datetime_msk(~N[2020-10-25 10:00:00.123]) == "13:00 25.10.2020 (MSK)"
+      dt = ~U[2020-10-25 10:00:00.123Z] |> DateTime.shift_zone!("Europe/Moscow")
+
+      assert format_datetime(dt) ==
+               "13:00 25.10.2020 MSK"
     end
   end
 

@@ -81,9 +81,9 @@ defmodule CuteFemBot.Logic.Posting do
         Logger.info("Posting data not found in the persistence; skip posting scheduling")
 
       %CuteFemBot.Core.Posting{} = posting ->
-        now = DateTime.utc_now() |> DateTime.to_naive()
-        {:ok, fire_at} = CuteFemBot.Core.Posting.compute_next_posting_time(posting, now)
-        diff_ms = NaiveDateTime.diff(fire_at, now, :millisecond)
+        now = DateTime.utc_now()
+        {:ok, fire_at} = CuteFemBot.Core.Posting.compute_next_posting_time_msk(posting, now)
+        diff_ms = DateTime.diff(fire_at, now, :millisecond)
 
         Logger.info("Scheduling posting at #{fire_at} (or after #{diff_ms} ms)")
 

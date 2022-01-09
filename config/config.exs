@@ -19,5 +19,7 @@ else
     metadata: [:mfa, :crash_reason]
 end
 
+config :elixir, :time_zone_database, Zoneinfo.TimeZoneDatabase
+
 config :plug_cowboy,
   log_exceptions_with_status_code: [400..599]

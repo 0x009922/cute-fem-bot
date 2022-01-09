@@ -187,7 +187,7 @@ defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
 
             next_fires =
               compute_next_fire_time_stamps(posting, 7)
-              |> Stream.map(&CuteFemBot.Util.format_datetime_msk/1)
+              |> Stream.map(&CuteFemBot.Util.format_datetime/1)
               |> Stream.map(fn x -> "<code>#{x}</code>" end)
               |> Enum.join("\n")
 
@@ -231,9 +231,9 @@ defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
 
   defp compute_next_fire_time_stamps(%Posting{} = posting, count) do
     {list, _} =
-      Enum.map_reduce(1..count, DateTime.to_naive(DateTime.utc_now()), fn _, stamp ->
-        {:ok, stamp} = Posting.compute_next_posting_time(posting, stamp)
-        {stamp, NaiveDateTime.add(stamp, 30, :second)}
+      Enum.map_reduce(1..count, DateTime.utc_now(), fn _, stamp ->
+        {:ok, stamp} = Posting.compute_next_posting_time_msk(posting, stamp)
+        {stamp, DateTime.add(stamp, 30, :second)}
       end)
 
     list

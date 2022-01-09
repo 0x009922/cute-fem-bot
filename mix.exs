@@ -27,7 +27,8 @@ defmodule CuteFemBot.MixProject do
       {:yaml_elixir, "~> 2.8.0"},
       {:json, "~> 1.4"},
       {:crontab, "~> 1.1.10"},
-      {:plug_cowboy, "~> 2.0"}
+      {:plug_cowboy, "~> 2.0"},
+      {:zoneinfo, "~> 0.1.0"}
     ]
   end
 end

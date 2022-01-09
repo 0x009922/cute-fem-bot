@@ -29,11 +29,21 @@ defmodule CuteFemBot.Core.Posting do
   def is_complete?(%Self{} = self) when is_nil(self.cron) or is_nil(self.flush), do: false
   def is_complete?(_), do: true
 
-  def compute_next_posting_time(%Self{} = self, now) do
+  def compute_next_posting_time_msk(%Self{} = self, now) do
+    now =
+      case now do
+        %NaiveDateTime{} -> now
+        %DateTime{} = dt -> dt |> DateTime.shift_zone!("Europe/Moscow") |> DateTime.to_naive()
+      end
+
     if not is_complete?(self) do
       {:error, :state_incomplete}
     else
-      Crontab.Scheduler.get_next_run_date(self.cron, now)
+      with {:ok, %NaiveDateTime{} = naitve} <-
+             Crontab.Scheduler.get_next_run_date(self.cron, now),
+           {:ok, msk} <- DateTime.from_naive(naitve, "Europe/Moscow") do
+        {:ok, msk}
+      end
     end
   end
 

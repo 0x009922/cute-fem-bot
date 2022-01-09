@@ -72,14 +72,24 @@ defmodule CuteFemBotCorePostingTest do
     {:ok, x} = Posting.new() |> Posting.put_raw_cron("30 * * * *")
     {:ok, x} = Posting.put_raw_flush(x, "5")
 
-    now = ~N[2020-05-10 04:23:55]
-    expected = ~N[2020-05-10 04:30:00]
+    now = DateTime.from_naive!(~N[2020-05-10 04:23:55], "Europe/Moscow")
+    expected = DateTime.from_naive!(~N[2020-05-10 04:30:00], "Europe/Moscow")
 
-    assert Posting.compute_next_posting_time(x, now) == {:ok, expected}
+    assert Posting.compute_next_posting_time_msk(x, now) == {:ok, expected}
+  end
+
+  test "computing next posting time correctly even if input time is in UTC" do
+    {:ok, x} = Posting.new() |> Posting.put_raw_cron("0 10 * * *")
+    {:ok, x} = Posting.put_raw_flush(x, "5")
+
+    now = ~U[2020-05-10 05:00:00Z]
+    expected = DateTime.from_naive!(~N[2020-05-10 10:00:00], "Europe/Moscow")
+
+    assert Posting.compute_next_posting_time_msk(x, now) == {:ok, expected}
   end
 
   test "computing of next posting time fail due to incompleteness" do
-    assert Posting.compute_next_posting_time(Posting.new(), ~N[2020-10-10 02:02:02]) ==
+    assert Posting.compute_next_posting_time_msk(Posting.new(), ~N[2020-10-10 02:02:02]) ==
              {:error, :state_incomplete}
   end
 
