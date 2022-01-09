@@ -41,15 +41,15 @@ defmodule CuteFemBot.Application do
         config: cfg_ref,
         posting: CuteFemBot.Logic.Posting
       },
-      # {
-      #   CuteFemBot.Logic.Posting,
-      #   name: CuteFemBot.Logic.Posting,
-      #   deps: %{
-      #     api: CuteFemBot.Telegram.Api,
-      #     persistence: CuteFemBot.Persistence,
-      #     config: CuteFemBot.Config.State
-      #   }
-      # },
+      {
+        CuteFemBot.Logic.Posting,
+        name: CuteFemBot.Logic.Posting,
+        deps: %{
+          api: CuteFemBot.Telegram.Api,
+          persistence: CuteFemBot.Persistence,
+          config: cfg_ref
+        }
+      },
       {
         CuteFemBot.Logic.Tasks.SetCommands,
         deps: %{
