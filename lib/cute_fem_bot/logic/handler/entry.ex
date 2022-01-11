@@ -70,8 +70,8 @@ defmodule CuteFemBot.Logic.Handler.Entry do
 
     scope =
       cond do
-        user_id in admins -> :admin
         chat_id == suggestions_chat -> :suggestions_admin
+        chat_id == user_id and user_id in admins -> :admin
         chat_type == "private" -> :suggestions
         true -> :confusing
       end

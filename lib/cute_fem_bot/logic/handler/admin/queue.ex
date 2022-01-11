@@ -42,10 +42,10 @@ defmodule CuteFemBot.Logic.Handler.Admin.Queue do
       Map.update!(self, :current_queue_index, fun)
     end
 
-    def btn_key_to_data(key) when key in [:inc, :dec, :cancel, :cancel_approved],
+    def btn_key_to_data(key) when key in [:inc, :dec, :cancel_approved],
       do: Atom.to_string(key)
 
-    def btn_data_to_key(data) when data in ["inc", "dec", "cancel", "cancel_approved"],
+    def btn_data_to_key(data) when data in ["inc", "dec", "cancel_approved"],
       do: {:ok, String.to_existing_atom(data)}
 
     def btn_data_to_key(_), do: :error
@@ -126,10 +126,6 @@ defmodule CuteFemBot.Logic.Handler.Admin.Queue do
 
                       :dec ->
                         apply_observing_update(ctx, state |> Observing.dec())
-
-                      :cancel ->
-                        observing_delete_preview(ctx, state)
-                        command_cancel(ctx)
 
                       :cancel_approved ->
                         pers = Ctx.deps_persistence(ctx)
@@ -250,14 +246,13 @@ defmodule CuteFemBot.Logic.Handler.Admin.Queue do
                 idx == queue_len - 1 -> [:dec]
                 true -> [:dec, :inc]
               end) do
-        [:cancel | [:cancel_approved | inc_dec]]
+        [:cancel_approved | inc_dec]
       end
       |> Enum.map(fn btn ->
         btn_data = Observing.btn_key_to_data(btn)
 
         btn_caption =
           case btn do
-            :cancel -> "Отмена"
             :inc -> "»"
             :dec -> "«"
             :cancel_approved -> "Не ня"

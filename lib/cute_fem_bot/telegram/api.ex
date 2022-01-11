@@ -78,6 +78,13 @@ defmodule CuteFemBot.Telegram.Api do
             Process.sleep(:timer.seconds(seconds))
             do_request_with_retries(finch, token, method_name, body)
 
+          %{
+            "ok" => false,
+            "description" => desc,
+            "parameters" => %{"migrate_to_chat_id" => migrate}
+          } ->
+            {:error, :telegram, "(#{migrate}) #{desc}"}
+
           %{"ok" => false, "description" => desc} ->
             {:error, :telegram, desc}
 
