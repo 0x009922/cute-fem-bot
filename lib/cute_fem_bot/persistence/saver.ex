@@ -55,7 +55,7 @@ defmodule CuteFemBot.Persistence.Saver do
     CuteFemBot.Persistence.get_state(pers)
     |> write()
 
-    Logger.info("State is saved")
+    Logger.debug("State is saved")
   end
 
   defp read() do
