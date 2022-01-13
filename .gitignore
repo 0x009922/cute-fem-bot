@@ -30,3 +30,6 @@ config.yml
 
 # App saved state
 /data
+
+# release artifacts
+/dist

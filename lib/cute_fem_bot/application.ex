@@ -105,9 +105,9 @@ defmodule CuteFemBot.Application do
 
   # doesn't work btw
 
-  # @impl true
-  # def prep_stop(_) do
-  #   CuteFemBot.Persistence.Saver.save_immediately(CuteFemBot.Persistence.Saver)
-  #   :ok
-  # end
+  @impl true
+  def prep_stop(_) do
+    CuteFemBot.Persistence.Saver.save_immediately(CuteFemBot.Persistence.Saver)
+    :ok
+  end
 end

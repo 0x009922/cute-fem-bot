@@ -12,9 +12,9 @@ RUN MIX_ENV=prod mix deps.compile
 
 COPY lib lib
 COPY config.yml ./
-RUN MIX_ENV=prod mix release
+RUN MIX_ENV=prod mix release --path dist
 
 RUN mkdir data
 
 EXPOSE 3000
-CMD [ "/_build/prod/rel/cute_fem_bot/bin/cute_fem_bot", "start" ]
+CMD [ "/dist/bin/cute_fem_bot", "start" ]
