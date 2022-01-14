@@ -57,9 +57,14 @@ defmodule CuteFemBotPersistenceTest do
 
     assert Persistence.add_new_suggestion(pers, data) == :ok
     assert Persistence.bind_moderation_msg_to_suggestion(pers, 4, 99) == :ok
-    assert Persistence.approve_media(pers, 4) == :ok
+    assert Persistence.approve_media(pers, 4, :sfw) == :ok
     assert Persistence.find_suggestion_by_moderation_msg(pers, 99) == :not_found
-    assert Persistence.get_approved_queue(pers) == [data |> Suggestion.bind_moderation_msg(99)]
+
+    assert Persistence.get_approved_queue(pers, :sfw) == [
+             data |> Suggestion.bind_moderation_msg(99)
+           ]
+
+    assert Persistence.get_approved_queue(pers, :nsfw) == []
   end
 
   test "rejecting media", %{pers: pers} do
@@ -69,7 +74,8 @@ defmodule CuteFemBotPersistenceTest do
     assert Persistence.bind_moderation_msg_to_suggestion(pers, 4, 99) == :ok
     assert Persistence.reject_media(pers, 4) == :ok
     assert Persistence.find_suggestion_by_moderation_msg(pers, 5) == :not_found
-    assert Persistence.get_approved_queue(pers) == []
+    assert Persistence.get_approved_queue(pers, :sfw) == []
+    assert Persistence.get_approved_queue(pers, :nsfw) == []
   end
 
   test "adding the same unapproved file again", %{pers: pers} do
@@ -89,12 +95,12 @@ defmodule CuteFemBotPersistenceTest do
     ]
     |> Enum.each(fn f ->
       Persistence.add_new_suggestion(pers, f)
-      Persistence.approve_media(pers, f.file_id)
+      Persistence.approve_media(pers, f.file_id, :nsfw)
     end)
 
     Persistence.files_posted(pers, [1, 0])
 
-    assert Persistence.get_approved_queue(pers) == []
+    assert Persistence.get_approved_queue(pers, :nsfw) == []
   end
 
   test "setting & getting admin chat states", %{pers: pers} do
@@ -110,9 +116,9 @@ defmodule CuteFemBotPersistenceTest do
     suggestion = Suggestion.new(:photo, "nya", 9919)
 
     Persistence.add_new_suggestion(pers, suggestion)
-    Persistence.approve_media(pers, "nya")
+    Persistence.approve_media(pers, "nya", :sfw)
 
     assert Persistence.cancel_approved(pers, "nya") == :ok
-    assert Persistence.get_approved_queue(pers) == []
+    assert Persistence.get_approved_queue(pers, :sfw) == []
   end
 end

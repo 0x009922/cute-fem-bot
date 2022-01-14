@@ -26,7 +26,7 @@ defmodule CuteFemBot.Logic.Handler.Admin do
       :handle_cmd_help,
       :handle_cmd_unban,
       :handle_cmd_dynamic_unban,
-      {Queue, :handle},
+      # {Queue, :handle},
       {Schedule, :handle},
       :skip
     ]
@@ -124,6 +124,7 @@ defmodule CuteFemBot.Logic.Handler.Admin do
     end
   end
 
+  @spec handle_cmd_queue(atom | %{:commands => any, optional(any) => any}) :: :cont | :halt
   def handle_cmd_queue(ctx) do
     halt_if_cmd(ctx, "queue", fn ->
       Queue.command_queue(ctx)

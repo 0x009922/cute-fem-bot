@@ -51,24 +51,24 @@ defmodule CuteFemBot.Telegram.Api do
   defp prepare_body(str) when is_binary(str), do: str
   defp prepare_body(body), do: JSON.encode!(body)
 
-  defp do_request_with_retries(finch, token, method_name, body) do
-    body = prepare_body(body)
+  defp do_request_with_retries(finch, token, method_name, request_body) do
+    request_body = prepare_body(request_body)
 
-    Logger.debug("Making request to Telegram: #{method_name}; body: #{inspect(body)}")
+    Logger.debug("Making request to Telegram: #{method_name}; body: #{inspect(request_body)}")
 
     case Finch.Request.build(
            :post,
            "https://api.telegram.org/bot#{token}/#{method_name}",
            %{"content-type" => "application/json"},
-           body,
+           request_body,
            []
          )
          |> Finch.request(finch) do
       {:error, err} ->
         {:error, :http, err}
 
-      {:ok, %Finch.Response{body: body}} ->
-        case JSON.decode!(body) do
+      {:ok, %Finch.Response{body: response_body}} ->
+        case JSON.decode!(response_body) do
           %{"ok" => true, "result" => result} ->
             {:ok, result}
 
@@ -76,7 +76,7 @@ defmodule CuteFemBot.Telegram.Api do
             # retrying
             Logger.warning("Telegram told to retry request after #{seconds} seconds...")
             Process.sleep(:timer.seconds(seconds))
-            do_request_with_retries(finch, token, method_name, body)
+            do_request_with_retries(finch, token, method_name, request_body)
 
           %{
             "ok" => false,
@@ -101,8 +101,10 @@ defmodule CuteFemBot.Telegram.Api do
   end
 
   def request!(api, opts) do
-    {:ok, response} = request(api, opts)
-    response
+    case request(api, opts) do
+      {:ok, response} -> response
+      :error -> raise "request! failed"
+    end
   end
 
   def send_message(api, body) do
@@ -120,7 +122,10 @@ defmodule CuteFemBot.Telegram.Api do
   end
 
   def delete_message!(api, chat_id, message_id) do
-    {:ok, _} = delete_message(api, chat_id, message_id)
+    case delete_message(api, chat_id, message_id) do
+      {:ok, _} -> :ok
+      :error -> raise "delete_message! failed"
+    end
   end
 
   def answer_callback_query(api, query_id, _opts \\ []) do

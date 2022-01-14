@@ -17,7 +17,9 @@ defmodule CuteFemBot.Logic.Tasks.SetCommands do
     delete_stream =
       Stream.map(admins, fn id -> {scope_chat(id), nil} end)
       |> Stream.concat(["ru", nil] |> Stream.map(fn lang -> {scope_default(), lang} end))
-      |> Task.async_stream(fn {scope, lang} -> delete_commands(api, scope, lang) end)
+      |> Task.async_stream(fn {scope, lang} -> delete_commands(api, scope, lang) end,
+        timeout: 30_000
+      )
 
     # setting new commands
     # for admins
@@ -27,8 +29,8 @@ defmodule CuteFemBot.Logic.Tasks.SetCommands do
           scope_chat(id),
           [
             cmd("schedule", "Расписание - просмотр, установка"),
-            cmd("posting_mode", "Войти в режим постинга (т.е. обычного пользователя)"),
-            cmd("queue", "Очередь - посмотреть, отменить"),
+            cmd("posting_mode", "Режим постинга"),
+            cmd("queue", "[ИНФОРМАЦИЯ УДАЛЕНА]"),
             cmd("unban", "Разбанить пользователей"),
             cmd("cancel", "Отмена текущей операции"),
             cmd("help", "Памятка по использованию")
@@ -50,7 +52,9 @@ defmodule CuteFemBot.Logic.Tasks.SetCommands do
           }
         end)
       )
-      |> Task.async_stream(fn {scope, cmds, lang} -> set_commands(api, scope, cmds, lang) end)
+      |> Task.async_stream(fn {scope, cmds, lang} -> set_commands(api, scope, cmds, lang) end,
+        timeout: 30_000
+      )
 
     Stream.concat([delete_stream, set_stream])
     |> Enum.to_list()

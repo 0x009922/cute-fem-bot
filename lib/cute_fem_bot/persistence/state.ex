@@ -7,9 +7,9 @@ defmodule CuteFemBot.Persistence.State do
   typedstruct do
     field(:users_meta, map(), default: %{})
     field(:unapproved, map(), default: %{})
-    field(:approved_queue, list(), default: [])
+    field(:approved_queue, map(), default: %{sfw: [], nsfw: []})
     field(:banned, MapSet.t(), default: MapSet.new())
-    field(:posting, CuteFemBot.Core.Posting.t(), default: nil)
+    field(:schedule, CuteFemBot.Core.Schedule.Complex.t(), default: nil)
     field(:admin_states, any(), default: %{})
   end
 
@@ -79,7 +79,7 @@ defmodule CuteFemBot.Persistence.State do
     end
   end
 
-  def approve(state, file_id) do
+  def approve(state, file_id, category) when category in [:sfw, :nsfw] do
     case Map.pop(state.unapproved, file_id) do
       {nil, _} ->
         {:not_found, state}
@@ -90,7 +90,8 @@ defmodule CuteFemBot.Persistence.State do
           %Self{
             state
             | unapproved: unapproved,
-              approved_queue: state.approved_queue ++ [data]
+              approved_queue:
+                Map.update!(state.approved_queue, category, fn list -> list ++ [data] end)
           }
         }
     end
@@ -110,9 +111,15 @@ defmodule CuteFemBot.Persistence.State do
     %Self{
       state
       | approved_queue:
-          Enum.filter(state.approved_queue, fn %Suggestion{file_id: file_id} ->
-            file_id not in ids
+          Enum.map(state.approved_queue, fn {category, queue} ->
+            queue =
+              Enum.filter(queue, fn %Suggestion{file_id: file_id} ->
+                file_id not in ids
+              end)
+
+            {category, queue}
           end)
+          |> Enum.into(%{})
     }
   end
 

@@ -25,20 +25,20 @@ defmodule CuteFemBot.Logic.Posting do
   end
 
   @impl true
-  def handle_info({:do_posting, key_schedule}, %{deps: deps, key: key_truth} = state) do
+  def handle_info(
+        {:do_posting, key_schedule, flush_count, category},
+        %{deps: deps, key: key_truth} = state
+      ) do
     if key_schedule != key_truth do
       Logger.info("Skipping posting signal due to bad scheduling key")
       {:noreply, state}
     else
       Logger.info("do_posting signal received")
 
-      count =
-        with %CuteFemBot.Core.Posting{} = posting <-
-               CuteFemBot.Persistence.get_posting(deps.persistence),
-             {:ok, count} <- CuteFemBot.Core.Posting.compute_flush_count(posting),
-             do: count
+      queue =
+        CuteFemBot.Persistence.get_approved_queue(deps.persistence, category)
+        |> Enum.take(flush_count)
 
-      queue = CuteFemBot.Persistence.get_approved_queue(deps.persistence) |> Enum.take(count)
       # file_ids = queue |> Enum.map(fn {_ty, file_id} -> file_id end)
       %CuteFemBot.Config{posting_chat: chat_id} = CuteFemBot.Config.State.lookup!(deps.config)
 
@@ -76,18 +76,21 @@ defmodule CuteFemBot.Logic.Posting do
   # private
 
   defp schedule_posting(persistence, key) do
-    case CuteFemBot.Persistence.get_posting(persistence) do
+    case CuteFemBot.Persistence.get_schedule(persistence) do
       nil ->
         Logger.info("Posting data not found in the persistence; skip posting scheduling")
 
-      %CuteFemBot.Core.Posting{} = posting ->
+      %CuteFemBot.Core.Schedule.Complex{} = schedule ->
         now = DateTime.utc_now()
-        {:ok, fire_at} = CuteFemBot.Core.Posting.compute_next_posting_time_msk(posting, now)
+
+        {:ok, fire_at, flush, category} =
+          CuteFemBot.Core.Schedule.Complex.compute_next(schedule, now)
+
         diff_ms = DateTime.diff(fire_at, now, :millisecond)
 
         Logger.info("Scheduling posting at #{fire_at} (or after #{diff_ms} ms)")
 
-        Process.send_after(self(), {:do_posting, key}, diff_ms)
+        Process.send_after(self(), {:do_posting, key, flush, category}, diff_ms)
     end
   end
 

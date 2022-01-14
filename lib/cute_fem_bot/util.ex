@@ -80,6 +80,10 @@ defmodule CuteFemBot.Util do
     |> String.replace(~r{>}, "&gt;")
   end
 
+  def inspect_err_html(err) do
+    inspect(err) |> escape_html()
+  end
+
   defp nil_or_trim(nil), do: ""
   defp nil_or_trim(x) when is_binary(x), do: String.trim(x)
 end

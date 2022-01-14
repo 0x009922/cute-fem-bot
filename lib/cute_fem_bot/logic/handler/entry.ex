@@ -9,6 +9,7 @@ defmodule CuteFemBot.Logic.Handler.Entry do
     [
       :fetch_config,
       :parse_update,
+      :ignore_unknown,
       :update_user_meta,
       :router,
       :finalize
@@ -17,10 +18,11 @@ defmodule CuteFemBot.Logic.Handler.Entry do
 
   def fetch_config(ctx) do
     {:cont, Ctx.fetch_config(ctx)}
+    # :halt
   end
 
   def parse_update(ctx) do
-    {update, {chat, user}} =
+    result =
       case ctx.update do
         %{
           "message" =>
@@ -41,15 +43,36 @@ defmodule CuteFemBot.Logic.Handler.Entry do
             } = query
         } ->
           {{:callback_query, query}, {chat, user}}
+
+        unknown ->
+          {:unknown, unknown}
       end
 
-    {:cont,
-     Map.put(ctx, :update, update)
-     |> Map.put(:source, %{
-       chat: chat,
-       user: user,
-       lang: Map.get(user, "language_code")
-     })}
+    case result do
+      {update, {chat, user}} ->
+        {:cont,
+         Map.put(ctx, :update, update)
+         |> Map.put(:source, %{
+           chat: chat,
+           user: user,
+           lang: Map.get(user, "language_code")
+         })}
+
+      {:unknown, _} = unknown ->
+        {:cont, Map.put(ctx, :update, unknown)}
+    end
+  end
+
+  def ignore_unknown(ctx) do
+    case ctx.update do
+      {:unknown, update} ->
+        keys = Map.keys(update) |> Enum.filter(fn x -> x != "update_id" end)
+        Logger.info("Update with keys #{keys} is ignored")
+        :halt
+
+      _ ->
+        :cont
+    end
   end
 
   def update_user_meta(ctx) do

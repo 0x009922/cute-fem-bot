@@ -1,5 +1,5 @@
 defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
-  alias CuteFemBot.Core.Posting
+  alias CuteFemBot.Core.Schedule
   alias CuteFemBot.Telegram.Types.Message
   alias CuteFemBot.Telegram.Api
   alias CuteFemBot.Persistence
@@ -53,14 +53,21 @@ defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
                         :error
 
                       :setup ->
-                        set_chat_state!(ctx, {:schedule, {:set, :cron, Posting.new()}})
+                        set_chat_state!(ctx, {:schedule, :setup})
 
                         send_msg!(
                           ctx,
                           Message.with_text("""
-                          Окей, пришли мне крон расписания
+                          ОК, настраиваем расписание. Оно может быть указано на нескольких строках, \
+                          в формате <code>"#{"<category>;<flush>;<cron expression>" |> CuteFemBot.Util.escape_html()}"</code>. <code>category</code> \
+                          - это <i>SFW</i> или <i>NSFW</i> (case insensitive).
 
-                          <i>tip: составить крон можешь на https://crontab.guru/</i>
+                          Пример:
+                          <pre>
+                          sfw;1;0 12-20
+                          nsfw;10;*</pre>
+
+                          <i>Tip: составить крон можешь на https://crontab.guru/</i>
                           """)
                         )
 
@@ -91,29 +98,18 @@ defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
                 :halt
             end
 
-          {:set, :cron, state} ->
+          :setup ->
             case ctx.update do
               {:message, msg} ->
-                raw_cron = msg["text"]
+                user_input = msg["text"]
+                parse_result = Schedule.Complex.from_raw(user_input)
 
-                case Posting.put_raw_cron(state, raw_cron) do
-                  {:ok, updated} ->
-                    set_chat_state!(ctx, {:schedule, {:set, :flush, updated}})
-
-                    send_msg!(
-                      ctx,
-                      Message.with_text("""
-                      Расписание понял. Теперь пришли, <i>как</i> постить -
-                      фиксированное число [картинок] или диапазон.
-
-                      Пример:
-
-                      6
-                      9000
-                      4-9
-                      """)
-                    )
-
+                case parse_result do
+                  {:ok, schedule} ->
+                    Persistence.set_schedule(Ctx.deps_persistence(ctx), schedule)
+                    CuteFemBot.Logic.Posting.reschedule(ctx.deps.posting)
+                    set_chat_state!(ctx, nil)
+                    send_msg!(ctx, %{"text" => "Ня. Новое расписание принято."})
                     :halt
 
                   {:error, msg} ->
@@ -121,8 +117,7 @@ defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
                       ctx,
                       Message.with_text("""
                       Не понял. Ты, наверное, сделал очепятку?
-
-                      <i>tip: #{msg}</i>
+                      <code>Ошибка: #{inspect(msg) |> CuteFemBot.Util.escape_html()}</code>
                       """)
                     )
 
@@ -134,33 +129,33 @@ defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
                 :halt
             end
 
-          {:set, :flush, %Posting{} = state} ->
-            case ctx.update do
-              {:message, %{"text" => raw_flush}} ->
-                case Posting.put_raw_flush(state, raw_flush) do
-                  {:ok, updated} ->
-                    Persistence.set_posting(ctx.deps.persistence, updated)
-                    CuteFemBot.Logic.Posting.reschedule(ctx.deps.posting)
-                    set_chat_state!(ctx, nil)
-                    send_msg!(ctx, %{"text" => "Ня. Новое расписание принято."})
-                    :halt
+          # {:set, :flush, %Schedule.Entry{} = state} ->
+          #   case ctx.update do
+          #     {:message, %{"text" => raw_flush}} ->
+          #       case Posting.put_raw_flush(state, raw_flush) do
+          #         {:ok, updated} ->
+          #           Persistence.set_posting(ctx.deps.persistence, updated)
+          #           CuteFemBot.Logic.Posting.reschedule(ctx.deps.posting)
+          #           set_chat_state!(ctx, nil)
+          #           send_msg!(ctx, %{"text" => "Ня. Новое расписание принято."})
+          #           :halt
 
-                  {:error, err} ->
-                    send_msg!(ctx, %{
-                      "text" => """
-                      Не, ну я бы понял, если бы ты ошибся с написанием крона, но тут-то вроде всё просто... попробуй ещё раз, зай
+          #         {:error, err} ->
+          #           send_msg!(ctx, %{
+          #             "text" => """
+          #             Не, ну я бы понял, если бы ты ошибся с написанием крона, но тут-то вроде всё просто... попробуй ещё раз, зай
 
-                      <i>tip: #{err}</i>
-                      """
-                    })
+          #             <i>tip: #{err}</i>
+          #             """
+          #           })
 
-                    :halt
-                end
+          #           :halt
+          #       end
 
-              {:callback_query, %{"query_id" => id}} ->
-                Api.answer_callback_query(Ctx.deps_api(ctx), id)
-                :halt
-            end
+          #     {:callback_query, %{"query_id" => id}} ->
+          #       Api.answer_callback_query(Ctx.deps_api(ctx), id)
+          #       :halt
+          #   end
 
           unknown_state ->
             raise_invalid_chat_state!(ctx, unknown_state)
@@ -174,40 +169,32 @@ defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
   end
 
   defp schedule_show(ctx) do
-    current_posting = CuteFemBot.Persistence.get_posting(Ctx.deps_persistence(ctx))
+    schedule = CuteFemBot.Persistence.get_schedule(Ctx.deps_persistence(ctx))
 
     formatted =
-      case current_posting do
+      case schedule do
         nil ->
           "Не установлено"
 
-        posting ->
-          if Posting.is_complete?(posting) do
-            {:ok, cron} = Posting.format_cron(posting)
-
-            next_fires =
-              compute_next_fire_time_stamps(posting, 7)
-              |> Stream.map(&CuteFemBot.Util.format_datetime/1)
-              |> Stream.map(fn x -> "<code>#{x}</code>" end)
-              |> Enum.join("\n")
-
-            {:ok, flush} = Posting.format_flush(posting)
-
+        _ ->
+          with {:ok, formatted} <- Schedule.Complex.format(schedule),
+               {:ok, formatted_next_fire_timestamps} <- format_next_fire_timestamps(schedule, 10) do
             """
-            Крон: <code>#{cron}</code>
-            Flush: #{flush}
-            Следующие посты:
-            #{next_fires}
+            #{formatted}
 
-            <i>tip: расшифровать и составить крон можешь на https://crontab.guru/</i>
+            Ближайшие срабатывания:
+
+            <pre>#{formatted_next_fire_timestamps |> CuteFemBot.Util.escape_html()}</pre>
             """
             |> String.trim()
           else
-            "Ошибка: нужно установить заново"
+            {:error, err} ->
+              "Ой. Что-то не так с расписанием. <code>#{CuteFemBot.Util.inspect_err_html(err)}</code>"
           end
       end
 
     {:schedule, {:start, msg_id}} = chat_state(ctx)
+    set_chat_state!(ctx, nil)
 
     Api.request(Ctx.deps_api(ctx),
       method_name: "editMessageText",
@@ -225,17 +212,29 @@ defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
         "disable_web_page_preview" => true
       }
     )
-
-    set_chat_state!(ctx, nil)
   end
 
-  defp compute_next_fire_time_stamps(%Posting{} = posting, count) do
-    {list, _} =
-      Enum.map_reduce(1..count, DateTime.utc_now(), fn _, stamp ->
-        {:ok, stamp} = Posting.compute_next_posting_time_msk(posting, stamp)
-        {stamp, DateTime.add(stamp, 30, :second)}
-      end)
+  defp format_next_fire_timestamps(%Schedule.Complex{} = schedule, count) do
+    try do
+      {list, _} =
+        Enum.map_reduce(1..count, DateTime.utc_now(), fn _, time ->
+          case Schedule.Complex.compute_next(schedule, time) do
+            {:ok, time, _flush, category} -> {{time, category}, DateTime.add(time, 30, :second)}
+            {:error, msg} -> {:step_error, msg}
+          end
+        end)
 
-    list
+      joined =
+        Enum.map(list, fn {time, category} ->
+          cat = category |> Atom.to_string() |> String.upcase()
+          time = CuteFemBot.Util.format_datetime(time)
+          "#{cat}: #{time}"
+        end)
+        |> Enum.join("\n")
+
+      {:ok, joined}
+    catch
+      {:step_error, msg} -> {:error, msg}
+    end
   end
 end

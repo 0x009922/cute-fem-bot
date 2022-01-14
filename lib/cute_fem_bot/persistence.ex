@@ -79,9 +79,9 @@ defmodule CuteFemBot.Persistence do
     end)
   end
 
-  def approve_media(pers, file_id) do
+  def approve_media(pers, file_id, category) do
     manipulate_state(pers, fn %State{} = state ->
-      State.approve(state, file_id)
+      State.approve(state, file_id, category)
     end)
   end
 
@@ -91,9 +91,9 @@ defmodule CuteFemBot.Persistence do
     end)
   end
 
-  def get_approved_queue(pers) do
+  def get_approved_queue(pers, category) when category in [:sfw, :nsfw] do
     manipulate_state(pers, fn %State{} = state ->
-      {state.approved_queue, state}
+      {state.approved_queue[category], state}
     end)
   end
 
@@ -140,15 +140,15 @@ defmodule CuteFemBot.Persistence do
     end)
   end
 
-  def get_posting(pers) do
+  def get_schedule(pers) do
     manipulate_state(pers, fn %State{} = state ->
-      {state.posting, state}
+      {state.schedule, state}
     end)
   end
 
-  def set_posting(pers, %CuteFemBot.Core.Posting{} = value) do
+  def set_schedule(pers, %CuteFemBot.Core.Schedule.Complex{} = value) do
     manipulate_state(pers, fn %State{} = state ->
-      {:ok, %State{state | posting: value}}
+      {:ok, %State{state | schedule: value}}
     end)
   end
 

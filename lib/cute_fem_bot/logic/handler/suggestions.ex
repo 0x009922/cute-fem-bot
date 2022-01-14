@@ -145,17 +145,19 @@ defmodule CuteFemBot.Logic.Handler.Suggestions do
     %{method_name: method, body_part: media_body_part} = Suggestion.to_send(item)
 
     btns =
-      [:approve, :reject, :ban]
+      [:approve_sfw, :approve_nsfw, :reject, :ban]
       |> Enum.map(fn key ->
         caption =
           case key do
-            :approve -> "Ня"
+            :approve_sfw -> "Ня (SFW)"
+            :approve_nsfw -> "Ня (NSFW)"
             :reject -> "Не ня"
             :ban -> "Бан"
           end
 
         inline_reply_btn(caption, Logic.Suggestions.suggestion_btn_key_to_data(key))
       end)
+      |> Enum.chunk_every(2)
 
     %{"message_id" => msg_id} =
       Api.request!(
@@ -167,7 +169,7 @@ defmodule CuteFemBot.Logic.Handler.Suggestions do
             "caption" => caption,
             "caption_entities" => caption_entities,
             "parse_mode" => "html",
-            "reply_markup" => %{"inline_keyboard" => [btns]}
+            "reply_markup" => %{"inline_keyboard" => btns}
           }
           |> Map.merge(media_body_part)
       )

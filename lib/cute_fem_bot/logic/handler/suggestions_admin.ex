@@ -21,20 +21,15 @@ defmodule CuteFemBot.Logic.Handler.SuggestionsAdmin do
            find_suggestion_msg(ctx, query_msg_id) do
       Api.answer_callback_query(Ctx.deps_api(ctx), query_id)
 
-      query_parsed =
-        case query_data do
-          "approve" -> {:ok, :approve}
-          "reject" -> {:ok, :reject}
-          "ban" -> {:ok, :ban}
-          _ -> :error
-        end
+      query_parsed = CuteFemBot.Logic.Suggestions.suggestion_btn_data_to_key(query_data)
 
       suggestion_callback_answer = fn action ->
         actor_formatted = ctx_format_source_user(ctx)
 
         action_text =
           case action do
-            :approve -> "ня"
+            :approve_sfw -> "ня"
+            :approve_nsfw -> "NSFW-ня"
             :reject -> "не ня"
             :ban -> "бан"
           end
@@ -68,8 +63,14 @@ defmodule CuteFemBot.Logic.Handler.SuggestionsAdmin do
           %Suggestion{file_id: file_id, user_id: user_id} = suggestion
 
           case action do
-            :approve ->
-              Persistence.approve_media(Ctx.deps_persistence(ctx), file_id)
+            x when x == :approve_sfw or x == :approve_nsfw ->
+              category =
+                case x do
+                  :approve_sfw -> :sfw
+                  :approve_nsfw -> :nsfw
+                end
+
+              Persistence.approve_media(Ctx.deps_persistence(ctx), file_id, category)
 
             :reject ->
               Persistence.reject_media(Ctx.deps_persistence(ctx), file_id)

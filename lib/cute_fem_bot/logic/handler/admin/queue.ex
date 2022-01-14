@@ -52,33 +52,25 @@ defmodule CuteFemBot.Logic.Handler.Admin.Queue do
   end
 
   def command_queue(ctx) do
-    queue = CuteFemBot.Persistence.get_approved_queue(ctx.deps.persistence)
-    queue_len = length(queue)
+    stat =
+      [:sfw, :nsfw]
+      |> Enum.map(fn category ->
+        {category,
+         length(CuteFemBot.Persistence.get_approved_queue(ctx.deps.persistence, category))}
+      end)
+      |> Enum.map(fn {cat, len} -> "#{cat}: #{len}" end)
+      |> Enum.join("\n")
 
-    if queue_len > 0 do
-      msg =
-        send_msg!(
-          ctx,
-          Message.with_text("""
-          <b>Очередь</b>
+    send_msg!(
+      ctx,
+      Message.with_text("""
+      <b>Очередь</b>
 
-          Сейчас контента в очереди: #{queue_len}
-          """)
-          |> Message.set_reply_markup(:inline_keyboard_markup, [
-            [
-              %{
-                "text" => "Посмотреть",
-                "callback_data" => "observe"
-              }
-            ]
-          ])
-        )
+      #{stat}
+      """)
+    )
 
-      set_chat_state!(ctx, {:queue, {:start, msg["message_id"]}})
-    else
-      send_msg!(ctx, Message.with_text(text_queue_is_empty()))
-      set_chat_state!(ctx, nil)
-    end
+    set_chat_state!(ctx, nil)
   end
 
   def handle(ctx) do
@@ -90,11 +82,14 @@ defmodule CuteFemBot.Logic.Handler.Admin.Queue do
           with {:callback_query, %{"id" => query_id} = query} <- ctx.update do
             case query do
               %{"message" => %{"message_id" => ^message_id}, "data" => "observe"} ->
-                # updates chat state automatically
-                apply_observing_update(ctx, %Observing{
-                  current_queue_index: 0,
-                  control_msg_id: message_id
-                })
+                send_msg!(ctx, Message.with_text("Я пока что разучился показывать очередь :p"))
+                set_chat_state!(ctx, nil)
+
+              # # updates chat state automatically
+              # apply_observing_update(ctx, %Observing{
+              #   current_queue_index: 0,
+              #   control_msg_id: message_id
+              # })
 
               _ ->
                 Api.answer_callback_query(Ctx.deps_api(ctx), query_id)
@@ -105,55 +100,55 @@ defmodule CuteFemBot.Logic.Handler.Admin.Queue do
               command_queue(ctx)
           end
 
-        {:observing, %Observing{} = state} ->
-          # we are looking for callback cmds: "inc", "dec", "cancel"
-          # if message received, re-send queue observing message
-          case ctx.update do
-            {:callback_query, %{"id" => query_id} = query} ->
-              msg_id = state.control_msg_id
+        # {:observing, %Observing{} = state} ->
+        #   # we are looking for callback cmds: "inc", "dec", "cancel"
+        #   # if message received, re-send queue observing message
+        #   case ctx.update do
+        #     {:callback_query, %{"id" => query_id} = query} ->
+        #       msg_id = state.control_msg_id
 
-              case query do
-                %{
-                  "message" => %{
-                    "message_id" => ^msg_id
-                  },
-                  "data" => query_data
-                } ->
-                  with {:ok, key} <- query_data |> Observing.btn_data_to_key() do
-                    case key do
-                      :inc ->
-                        apply_observing_update(ctx, state |> Observing.inc())
+        #       case query do
+        #         %{
+        #           "message" => %{
+        #             "message_id" => ^msg_id
+        #           },
+        #           "data" => query_data
+        #         } ->
+        #           with {:ok, key} <- query_data |> Observing.btn_data_to_key() do
+        #             case key do
+        #               :inc ->
+        #                 apply_observing_update(ctx, state |> Observing.inc())
 
-                      :dec ->
-                        apply_observing_update(ctx, state |> Observing.dec())
+        #               :dec ->
+        #                 apply_observing_update(ctx, state |> Observing.dec())
 
-                      :cancel_approved ->
-                        pers = Ctx.deps_persistence(ctx)
-                        queue = Persistence.get_approved_queue(pers)
+        #               :cancel_approved ->
+        #                 pers = Ctx.deps_persistence(ctx)
+        #                 queue = Persistence.get_approved_queue(pers)
 
-                        suggestion =
-                          case Enum.at(queue, state.current_queue_index) do
-                            %Suggestion{} = x -> x
-                          end
+        #                 suggestion =
+        #                   case Enum.at(queue, state.current_queue_index) do
+        #                     %Suggestion{} = x -> x
+        #                   end
 
-                        Persistence.cancel_approved(pers, suggestion.file_id)
+        #                 Persistence.cancel_approved(pers, suggestion.file_id)
 
-                        apply_observing_update(ctx, state)
-                    end
+        #                 apply_observing_update(ctx, state)
+        #             end
 
-                    :ok
-                  end
+        #             :ok
+        #           end
 
-                _ ->
-                  :error
-              end
+        #         _ ->
+        #           :error
+        #       end
 
-              Api.answer_callback_query(Ctx.deps_api(ctx), query_id)
+        #       Api.answer_callback_query(Ctx.deps_api(ctx), query_id)
 
-            _ ->
-              # it should update message id automatically
-              apply_observing_update(ctx, state |> Observing.reset_messages())
-          end
+        #     _ ->
+        #       # it should update message id automatically
+        #       apply_observing_update(ctx, state |> Observing.reset_messages())
+        #   end
 
         unknown_state ->
           raise_invalid_chat_state!(ctx, unknown_state)
