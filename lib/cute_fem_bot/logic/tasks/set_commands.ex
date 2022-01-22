@@ -14,56 +14,46 @@ defmodule CuteFemBot.Logic.Tasks.SetCommands do
     %CuteFemBot.Config{admins: admins} = CuteFemBot.Config.State.lookup!(config)
 
     # deleting old commands
-    delete_stream =
-      Stream.map(admins, fn id -> {scope_chat(id), nil} end)
-      |> Stream.concat(["ru", nil] |> Stream.map(fn lang -> {scope_default(), lang} end))
-      |> Task.async_stream(fn {scope, lang} -> delete_commands(api, scope, lang) end,
-        timeout: 30_000
-      )
+    Stream.map(admins, fn id -> {scope_chat(id), nil} end)
+    |> Stream.concat(["ru", nil] |> Stream.map(fn lang -> {scope_default(), lang} end))
+    |> Enum.each(fn {scope, lang} -> delete_commands(api, scope, lang) end)
 
     # setting new commands
     # for admins
-    set_stream =
-      Stream.map(admins, fn id ->
+    Stream.map(admins, fn id ->
+      {
+        scope_chat(id),
+        [
+          cmd("schedule", "Расписание - просмотр, установка"),
+          cmd("posting_mode", "Режим постинга"),
+          cmd("queue", "[ИНФОРМАЦИЯ УДАЛЕНА]"),
+          cmd("unban", "Разбанить пользователей"),
+          cmd("cancel", "Отмена текущей операции"),
+          cmd("help", "Памятка по использованию")
+        ],
+        nil
+      }
+    end)
+    # for regular users
+    |> Stream.concat(
+      ["ru", nil]
+      |> Stream.map(fn lang ->
         {
-          scope_chat(id),
+          scope_default(),
           [
-            cmd("schedule", "Расписание - просмотр, установка"),
-            cmd("posting_mode", "Режим постинга"),
-            cmd("queue", "[ИНФОРМАЦИЯ УДАЛЕНА]"),
-            cmd("unban", "Разбанить пользователей"),
-            cmd("cancel", "Отмена текущей операции"),
-            cmd("help", "Памятка по использованию")
+            cmd("start", Speaking.cmd_description_start(lang)),
+            cmd("help", Speaking.cmd_description_help(lang))
           ],
-          nil
+          lang
         }
       end)
-      # for regular users
-      |> Stream.concat(
-        ["ru", nil]
-        |> Stream.map(fn lang ->
-          {
-            scope_default(),
-            [
-              cmd("start", Speaking.cmd_description_start(lang)),
-              cmd("help", Speaking.cmd_description_help(lang))
-            ],
-            lang
-          }
-        end)
-      )
-      |> Task.async_stream(fn {scope, cmds, lang} -> set_commands(api, scope, cmds, lang) end,
-        timeout: 30_000
-      )
-
-    Stream.concat([delete_stream, set_stream])
-    |> Enum.to_list()
-
-    Logger.info("Done")
+    )
+    # apply
+    |> Enum.each(fn {scope, cmds, lang} -> set_commands(api, scope, cmds, lang) end)
   end
 
   defp delete_commands(api, scope, lang) do
-    CuteFemBot.Telegram.Api.request(api,
+    CuteFemBot.Telegram.Api.request_cast(api,
       method_name: "deleteMyCommands",
       body:
         %{
@@ -74,7 +64,7 @@ defmodule CuteFemBot.Logic.Tasks.SetCommands do
   end
 
   defp set_commands(api, scope, commands, lang) do
-    CuteFemBot.Telegram.Api.request(api,
+    CuteFemBot.Telegram.Api.request_cast(api,
       method_name: "setMyCommands",
       body:
         %{

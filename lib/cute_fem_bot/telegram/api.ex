@@ -19,9 +19,16 @@ defmodule CuteFemBot.Telegram.Api do
     {:reply, make_request(ctx, opts), ctx}
   end
 
+  @impl true
+  def handle_cast({:make_request, opts}, ctx) do
+    make_request(ctx, opts)
+    {:noreply, ctx}
+  end
+
   defp make_request(%Context{finch: finch, config: cfg}, opts) do
     method_name = Keyword.fetch!(opts, :method_name)
     body = Keyword.get(opts, :body, nil)
+
     %CuteFemBot.Config{api_token: token} = CuteFemBot.Config.State.lookup!(cfg)
 
     request_data = fn -> "method: #{method_name}; body: #{inspect(body)}" end
@@ -98,6 +105,10 @@ defmodule CuteFemBot.Telegram.Api do
 
   def request(api, opts) do
     GenServer.call(api, {:make_request, opts}, 60_000)
+  end
+
+  def request_cast(api, opts) do
+    GenServer.cast(api, {:make_request, opts})
   end
 
   def request!(api, opts) do
