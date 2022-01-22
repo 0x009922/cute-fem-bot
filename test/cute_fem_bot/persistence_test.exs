@@ -5,12 +5,16 @@ defmodule CuteFemBotPersistenceTest do
   alias CuteFemBot.Core.Suggestion
 
   setup do
-    pid = start_supervised!(Persistence)
-    %{pers: pid}
+    pers = Persistence.init_ets()
+    %{pers: pers}
   end
 
   test "initially ban list is empty", %{pers: pers} do
     assert Persistence.get_ban_list(pers) == MapSet.new()
+  end
+
+  test "unbanning user that is not banned", %{pers: pers} do
+    assert Persistence.unban_user(pers, 999) == :ok
   end
 
   test "getting user meta for unknown user", %{pers: pers} do
@@ -85,7 +89,7 @@ defmodule CuteFemBotPersistenceTest do
     assert Persistence.add_new_suggestion(pers, data) == :duplication
   end
 
-  test "committing files posting", %{pers: pers} do
+  test "committing files flushing", %{pers: pers} do
     file1 = Suggestion.new(:photo, 0, 0)
     file2 = Suggestion.new(:photo, 1, 0)
 
@@ -98,18 +102,18 @@ defmodule CuteFemBotPersistenceTest do
       Persistence.approve_media(pers, f.file_id, :nsfw)
     end)
 
-    Persistence.files_posted(pers, [1, 0])
+    Persistence.commit_as_flushed(pers, [1, 0])
 
     assert Persistence.get_approved_queue(pers, :nsfw) == []
   end
 
-  test "setting & getting admin chat states", %{pers: pers} do
-    assert Persistence.get_admin_chat_state(pers, 55) == nil
-    assert Persistence.set_admin_chat_state(pers, 55, :test) == :ok
-    assert Persistence.get_admin_chat_state(pers, 55) == :test
-    assert Persistence.get_admin_chat_state(pers, 99) == nil
-    assert Persistence.set_admin_chat_state(pers, 55, :foo) == :ok
-    assert Persistence.get_admin_chat_state(pers, 55) == :foo
+  test "setting & getting chat states", %{pers: pers} do
+    assert Persistence.get_chat_state(pers, 55) == nil
+    assert Persistence.set_chat_state(pers, 55, :test) == :ok
+    assert Persistence.get_chat_state(pers, 55) == :test
+    assert Persistence.get_chat_state(pers, 99) == nil
+    assert Persistence.set_chat_state(pers, 55, :foo) == :ok
+    assert Persistence.get_chat_state(pers, 55) == :foo
   end
 
   test "cancelling approved suggestion", %{pers: pers} do
