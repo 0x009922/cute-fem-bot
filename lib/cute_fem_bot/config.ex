@@ -34,7 +34,7 @@ defmodule CuteFemBot.Config do
   @spec read_cfg() :: {:error, any()} | {:ok, __MODULE__.t()}
   def read_cfg() do
     with {:ok, cwd} <- File.cwd(),
-         {:ok, parsed} <- YamlElixir.read_all_from_file(Path.join(cwd, "config.yml")),
+         {:ok, parsed} <- YamlElixir.read_all_from_file(Path.join(cwd, "data/config.yml")),
          {:ok, parsed} <-
            (case parsed do
               [x] -> {:ok, x}
