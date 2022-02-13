@@ -36,11 +36,7 @@ defmodule CuteFemBot.MixProject do
 
   defp aliases() do
     [
-      test: ["ecto.drop", "ecto.create", "ecto.migrate", "test"]
+      test: ["ecto.drop", "ecto.create", "ecto.migrate --quiet", "test --no-start"]
     ]
   end
-
-  # defp elixirc_paths(:test) do
-  #   ["lib", "priv/repo/migrations"]
-  # end
 end

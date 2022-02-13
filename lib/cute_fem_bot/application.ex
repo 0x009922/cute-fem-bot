@@ -24,6 +24,7 @@ defmodule CuteFemBot.Application do
     end
 
     children = [
+      CuteFemBot.Repo,
       {CuteFemBot.Persistence, name: CuteFemBot.Persistence},
       {
         CuteFemBot.Persistence.Saver,

@@ -5,21 +5,20 @@ defmodule CuteFemBotLogicHandlerUtilTest do
   import CuteFemBot.Logic.Util
 
   setup do
-    pid = start_supervised!(Persistence)
-    %{pers: pid}
+    Ecto.Adapters.SQL.Sandbox.checkout(CuteFemBot.Repo)
   end
 
-  test "user html link when meta exists", %{pers: pers} do
+  test "user html link when meta exists" do
     user_data = %{"id" => 5512, "first_name" => "Nanu", "last_name" => "Oya"}
 
-    Persistence.update_user_meta(pers, user_data)
+    Persistence.update_user_meta(user_data)
 
-    assert user_html_link_using_meta(pers, 5512) ==
+    assert user_html_link_using_meta(5512) ==
              "<a href=\"tg://user?id=5512\">Nanu Oya</a>"
   end
 
-  test "user html link when no meta data", %{pers: pers} do
-    assert user_html_link_using_meta(pers, 999) ==
+  test "user html link when no meta data" do
+    assert user_html_link_using_meta(999) ==
              "<i>нет данных</i> (<a href=\"tg://user?id=999\">пермалинк</a>)"
   end
 end
