@@ -25,11 +25,6 @@ defmodule CuteFemBot.Application do
 
     children = [
       CuteFemBot.Repo,
-      {CuteFemBot.Persistence, name: CuteFemBot.Persistence},
-      {
-        CuteFemBot.Persistence.Saver,
-        persistence: CuteFemBot.Persistence, name: CuteFemBot.Persistence.Saver
-      },
       {
         CuteFemBot.Telegram.Api.Supervisor,
         api: CuteFemBot.Telegram.Api, config: cfg_ref
@@ -38,7 +33,6 @@ defmodule CuteFemBot.Application do
         CuteFemBot.Logic.Handler,
         name: CuteFemBot.Logic.Handler,
         api: CuteFemBot.Telegram.Api,
-        persistence: CuteFemBot.Persistence,
         config: cfg_ref,
         posting: CuteFemBot.Logic.Posting
       },
@@ -47,7 +41,6 @@ defmodule CuteFemBot.Application do
         name: CuteFemBot.Logic.Posting,
         deps: %{
           api: CuteFemBot.Telegram.Api,
-          persistence: CuteFemBot.Persistence,
           config: cfg_ref
         }
       },
@@ -102,13 +95,5 @@ defmodule CuteFemBot.Application do
 
   defp fatal_exit(message) do
     Logger.emergency(message)
-  end
-
-  # doesn't work btw
-
-  @impl true
-  def prep_stop(_) do
-    CuteFemBot.Persistence.Saver.save_immediately(CuteFemBot.Persistence.Saver)
-    :ok
   end
 end

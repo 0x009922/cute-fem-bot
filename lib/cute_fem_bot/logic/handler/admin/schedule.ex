@@ -106,7 +106,7 @@ defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
 
                 case parse_result do
                   {:ok, schedule} ->
-                    Persistence.set_schedule(Ctx.deps_persistence(ctx), schedule)
+                    Persistence.set_schedule(schedule)
                     CuteFemBot.Logic.Posting.reschedule(ctx.deps.posting)
                     set_chat_state!(ctx, nil)
                     send_msg!(ctx, %{"text" => "Ня. Новое расписание принято."})
@@ -169,7 +169,7 @@ defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
   end
 
   defp schedule_show(ctx) do
-    schedule = CuteFemBot.Persistence.get_schedule(Ctx.deps_persistence(ctx))
+    schedule = CuteFemBot.Persistence.get_schedule()
 
     formatted =
       case schedule do

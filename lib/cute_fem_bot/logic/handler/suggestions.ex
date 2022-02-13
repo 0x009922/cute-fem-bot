@@ -16,7 +16,7 @@ defmodule CuteFemBot.Logic.Handler.Suggestions do
   end
 
   def banlist_guard(ctx) do
-    ban_list = Persistence.get_ban_list(Ctx.deps_persistence(ctx))
+    ban_list = Persistence.get_ban_list()
 
     if ctx_get_user_id(ctx) in ban_list do
       case ctx.update do
@@ -65,22 +65,14 @@ defmodule CuteFemBot.Logic.Handler.Suggestions do
             :halt
 
           {:ok, %Suggestion{} = item} ->
-            case Persistence.find_existing_unapproved_suggestion_by_file_id(
-                   Ctx.deps_persistence(ctx),
-                   item.file_id
-                 ) do
+            case Persistence.find_existing_unapproved_suggestion_by_file_id(item.file_id) do
               :not_found ->
-                :ok =
-                  Persistence.add_new_suggestion(
-                    Ctx.deps_persistence(ctx),
-                    item
-                  )
+                :ok = Persistence.add_new_suggestion(item)
 
                 msg_id = send_suggestion_to_admins!(ctx, item)
 
                 :ok =
                   Persistence.bind_moderation_msg_to_suggestion(
-                    Ctx.deps_persistence(ctx),
                     item.file_id,
                     msg_id
                   )

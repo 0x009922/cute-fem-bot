@@ -18,7 +18,7 @@ defmodule CuteFemBot.Logic.Handler.SuggestionsAdmin do
             "data" => query_data
           }} <- ctx.update,
          {:ok, %Suggestion{} = suggestion} <-
-           find_suggestion_msg(ctx, query_msg_id) do
+           find_suggestion_msg(query_msg_id) do
       Api.answer_callback_query(Ctx.deps_api(ctx), query_id)
 
       query_parsed = CuteFemBot.Logic.Suggestions.suggestion_btn_data_to_key(query_data)
@@ -70,13 +70,13 @@ defmodule CuteFemBot.Logic.Handler.SuggestionsAdmin do
                   :approve_nsfw -> :nsfw
                 end
 
-              Persistence.approve_media(Ctx.deps_persistence(ctx), file_id, category)
+              Persistence.approve_media(file_id, category)
 
             :reject ->
-              Persistence.reject_media(Ctx.deps_persistence(ctx), file_id)
+              Persistence.reject_media(file_id)
 
             :ban ->
-              Persistence.ban_user(Ctx.deps_persistence(ctx), user_id)
+              Persistence.ban_user(user_id)
           end
 
           suggestion_callback_answer.(action)
@@ -93,7 +93,7 @@ defmodule CuteFemBot.Logic.Handler.SuggestionsAdmin do
     CuteFemBot.Util.format_user_name(user, :html)
   end
 
-  defp find_suggestion_msg(ctx, msg_id) do
-    Persistence.find_suggestion_by_moderation_msg(Ctx.deps_persistence(ctx), msg_id)
+  defp find_suggestion_msg(msg_id) do
+    Persistence.find_suggestion_by_moderation_msg(msg_id)
   end
 end

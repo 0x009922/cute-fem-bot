@@ -22,7 +22,6 @@ defmodule CuteFemBot.Logic.Handler do
       %{
         deps: %{
           api: Keyword.fetch!(init_opts, :api),
-          persistence: Keyword.fetch!(init_opts, :persistence),
           config: Keyword.fetch!(init_opts, :config),
           posting: Keyword.fetch!(init_opts, :posting)
         }

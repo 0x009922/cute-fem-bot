@@ -11,8 +11,8 @@ defmodule CuteFemBot.Logic.Posting do
   end
 
   @impl true
-  def init(%{config: _, persistence: pers, api: _} = deps) do
-    schedule_posting(pers, 0)
+  def init(%{config: _, api: _} = deps) do
+    schedule_posting(0)
 
     {:ok, %{deps: deps, key: 0}}
   end
@@ -20,7 +20,7 @@ defmodule CuteFemBot.Logic.Posting do
   @impl true
   def handle_cast(:reschedule, %{deps: deps, key: key}) do
     Logger.info("Reschedule signal received")
-    schedule_posting(deps.persistence, key + 1)
+    schedule_posting(key + 1)
     {:noreply, %{deps: deps, key: key + 1}}
   end
 
@@ -36,7 +36,7 @@ defmodule CuteFemBot.Logic.Posting do
       Logger.info("do_posting signal received")
 
       queue =
-        CuteFemBot.Persistence.get_approved_queue(deps.persistence, category)
+        CuteFemBot.Persistence.get_approved_queue(category)
         |> Enum.take(flush_count)
 
       # file_ids = queue |> Enum.map(fn {_ty, file_id} -> file_id end)
@@ -62,12 +62,12 @@ defmodule CuteFemBot.Logic.Posting do
             |> Map.merge(body_part)
         )
 
-        CuteFemBot.Persistence.files_posted(deps.persistence, [file_id])
+        CuteFemBot.Persistence.check_as_published([file_id])
 
         Logger.info("File #{file_id} is posted!")
       end)
 
-      schedule_posting(deps.persistence, key_truth)
+      schedule_posting(key_truth)
 
       {:noreply, state}
     end
@@ -75,8 +75,8 @@ defmodule CuteFemBot.Logic.Posting do
 
   # private
 
-  defp schedule_posting(persistence, key) do
-    case CuteFemBot.Persistence.get_schedule(persistence) do
+  defp schedule_posting(key) do
+    case CuteFemBot.Persistence.get_schedule() do
       nil ->
         Logger.info("Posting data not found in the persistence; skip posting scheduling")
 

@@ -8,7 +8,7 @@ is_test? = Mix.env() == :test
 if is_test? do
   config :cute_fem_bot, CuteFemBot.Repo, database: "data/test.db", pool: Ecto.Adapters.SQL.Sandbox
 else
-  config :cute_fem_bot, CuteFemBot.Repo, database: "data/sqlite.db", auto_vacuum: :incremental
+  config :cute_fem_bot, CuteFemBot.Repo, database: "data/main.db", auto_vacuum: :incremental
 end
 
 config :cute_fem_bot,

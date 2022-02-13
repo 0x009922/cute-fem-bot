@@ -4,7 +4,6 @@ defmodule CuteFemBot.Logic.Handler.Ctx do
   end
 
   def deps_api(%{deps: %{api: api}}), do: api
-  def deps_persistence(%{deps: %{persistence: x}}), do: x
   def deps_config(%{deps: %{config: x}}), do: x
   def deps_posting(%{deps: %{posting: x}}), do: x
 

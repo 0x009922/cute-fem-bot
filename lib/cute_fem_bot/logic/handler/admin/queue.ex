@@ -55,8 +55,7 @@ defmodule CuteFemBot.Logic.Handler.Admin.Queue do
     stat =
       [:sfw, :nsfw]
       |> Enum.map(fn category ->
-        {category,
-         length(CuteFemBot.Persistence.get_approved_queue(ctx.deps.persistence, category))}
+        {category, length(CuteFemBot.Persistence.get_approved_queue(category))}
       end)
       |> Enum.map(fn {cat, len} -> "#{cat}: #{len}" end)
       |> Enum.join("\n")

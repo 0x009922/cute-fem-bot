@@ -1,5 +1,4 @@
 defmodule CuteFemBot.Logic.Handler.Admin.Shared do
-  alias CuteFemBot.Logic.Handler.Ctx
   alias CuteFemBot.Telegram.Types.Message
 
   def raise_invalid_chat_state!(ctx, state) do
@@ -33,9 +32,8 @@ defmodule CuteFemBot.Logic.Handler.Admin.Shared do
 
   def set_chat_state!(ctx, state) do
     :ok =
-      CuteFemBot.Persistence.set_admin_chat_state(
-        Ctx.deps_persistence(ctx),
-        get_admin_id(ctx),
+      CuteFemBot.Persistence.set_chat_state(
+        "admin-#{get_admin_id(ctx)}",
         state
       )
   end
@@ -64,10 +62,7 @@ defmodule CuteFemBot.Logic.Handler.Admin.Shared do
     Map.put(
       ctx,
       :admin_chat_state,
-      CuteFemBot.Persistence.get_admin_chat_state(
-        Ctx.deps_persistence(ctx),
-        get_admin_id(ctx)
-      )
+      CuteFemBot.Persistence.get_chat_state("admin-#{get_admin_id(ctx)}")
     )
   end
 

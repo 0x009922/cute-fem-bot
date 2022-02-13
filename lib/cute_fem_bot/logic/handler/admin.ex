@@ -9,7 +9,6 @@ defmodule CuteFemBot.Logic.Handler.Admin do
   alias Self.Schedule
   alias CuteFemBot.Telegram.Types.Message
   alias CuteFemBot.Persistence
-  alias CuteFemBot.Logic.Handler.Ctx
   alias CuteFemBot.Logic
 
   require Logger
@@ -64,15 +63,13 @@ defmodule CuteFemBot.Logic.Handler.Admin do
 
   def handle_cmd_unban(ctx) do
     halt_if_cmd(ctx, "unban", fn ->
-      pers = Ctx.deps_persistence(ctx)
-
-      banned = Persistence.get_ban_list(pers) |> Enum.to_list()
+      banned = Persistence.get_ban_list() |> Enum.to_list()
 
       text =
         if length(banned) > 0 do
           banned_formatted =
             Enum.map(banned, fn id ->
-              user_formatted = Logic.Util.user_html_link_using_meta(pers, id)
+              user_formatted = Logic.Util.user_html_link_using_meta(id)
               unban_cmd = "/unban_#{id}"
               "#{user_formatted}\n#{unban_cmd}"
             end)
@@ -100,13 +97,13 @@ defmodule CuteFemBot.Logic.Handler.Admin do
 
     if length(unban_user_ids) > 0 do
       Enum.each(unban_user_ids, fn id ->
-        Persistence.unban_user(Ctx.deps_persistence(ctx), id)
+        Persistence.unban_user(id)
       end)
 
       unbanned_formatted =
         Enum.map(
           unban_user_ids,
-          &Logic.Util.user_html_link_using_meta(Ctx.deps_persistence(ctx), &1)
+          &Logic.Util.user_html_link_using_meta(&1)
         )
         |> Enum.join("\n")
 

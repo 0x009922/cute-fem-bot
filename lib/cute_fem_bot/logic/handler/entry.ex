@@ -76,7 +76,7 @@ defmodule CuteFemBot.Logic.Handler.Entry do
   end
 
   def update_user_meta(ctx) do
-    Persistence.update_user_meta(Ctx.deps_persistence(ctx), ctx.source.user)
+    Persistence.update_user_meta(ctx.source.user)
     :cont
   end
 
