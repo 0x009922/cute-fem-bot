@@ -1,22 +1,30 @@
 # cute-fem-bot
 
+## Тесты
+
+```bash
+MIX_ENV=test mix test
+```
+
+> Важно указать `MIX_ENV=test`, чтобы сработала подготовка **тестовой** БД.
+
 ## Деплой
 
 Подготовка вольюма:
 
-```shell
+```bash
 sudo docker volume create cute-fem-bot-state
 ```
 
 Сборка образа:
 
-```shell
+```bash
 sudo docker build -t cute-fem-bot .
 ```
 
 Запуск:
 
-```shell
+```bash
 sudo docker run -v /home/username/cute-fem-bot/data:/data -v /usr/share/zoneinfo:/usr/share/zoneinfo -d cute-fem-bot
 ```
 
