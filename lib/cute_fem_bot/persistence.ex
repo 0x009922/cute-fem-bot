@@ -1,194 +1,199 @@
 defmodule CuteFemBot.Persistence do
-  alias CuteFemBot.Persistence, as: Self
   alias CuteFemBot.Core.Suggestion
   alias CuteFemBot.Core.Schedule
+  alias CuteFemBot.Schema
+  alias CuteFemBot.Repo
+  import Ecto.Query
 
   # defguard is_allowed_category(value) when Schedule.Complex.is_allowed_category(value)
   defguard is_allowed_category(value) when value in [:sfw, :nsfw]
 
-  use TypedStruct
-
-  typedstruct do
-    # ETS/DETS
-    field(:storage, any(), enforce: true)
-    field(:table_users_meta, any(), enforce: true)
-    field(:table_users_banned, any(), enforce: true)
-    field(:table_chat_state, any(), enforce: true)
-    field(:table_suggestions, any(), enforce: true)
-    field(:table_queue, any(), enforce: true)
-    field(:table_schedule, any(), enforce: true)
+  defp term_to_binary(term) do
+    :erlang.term_to_binary(term)
   end
 
-  def init_ets() do
-    %Self{
-      storage: :ets,
-      table_users_meta: :ets.new(:users_meta, [:set, :public]),
-      table_users_banned: :ets.new(:users_banned, [:set, :public]),
-      table_chat_state: :ets.new(:chat_state, [:set, :public]),
-      table_suggestions: :ets.new(:suggestions, [:set, :public]),
-      table_queue: :ets.new(:queue, [:bag, :public]),
-      table_schedule: :ets.new(:schedule, [:set, :public])
-    }
+  defp binary_to_term(binary) do
+    :erlang.binary_to_term(binary)
   end
 
-  defp call_ets(%Self{storage: storage}, fun, args) do
-    apply(storage, fun, args)
-  end
-
-  @spec update_user_meta(CuteFemBot.Persistence.t(), map) :: :ok
-  def update_user_meta(%Self{} = self, %{"id" => id} = data) do
-    true = call_ets(self, :insert, [self.table_users_meta, {id, data}])
-    :ok
-  end
-
-  @spec get_user_meta(Self.t(), any) :: :not_found | {:ok, any}
-  def get_user_meta(%Self{} = self, id) do
-    case call_ets(self, :lookup, [self.table_users_meta, id]) do
-      [] -> :not_found
-      [{_, data}] -> {:ok, data}
+  defp find_user(id) do
+    case Repo.get(Schema.User, id) do
+      nil -> :not_found
+      found -> {:ok, found}
     end
   end
 
-  @spec get_ban_list(CuteFemBot.Persistence.t()) :: MapSet.t()
-  def get_ban_list(%Self{} = self) do
-    call_ets(self, :match, [self.table_users_banned, :"$1"])
-    |> Stream.map(fn [{id}] -> id end)
+  defp find_or_init_user(id) do
+    case find_user(id) do
+      :not_found -> %Schema.User{id: id}
+      {:ok, user} -> user
+    end
+  end
+
+  @spec update_user_meta(map) :: :ok
+  def update_user_meta(%{"id" => id} = meta) do
+    find_or_init_user(id)
+    |> Schema.User.update_meta(term_to_binary(meta))
+    |> Repo.insert_or_update!()
+
+    :ok
+  end
+
+  @spec get_user_meta(any) :: :not_found | {:ok, any}
+  def get_user_meta(id) do
+    with {:ok, %Schema.User{meta: raw}} <- find_user(id) do
+      {:ok, binary_to_term(raw)}
+    end
+  end
+
+  @spec get_ban_list() :: MapSet.t()
+  def get_ban_list() do
+    Repo.all(from(u in Schema.User, where: u.banned == true))
+    |> Stream.map(fn %Schema.User{id: id} -> id end)
     |> Enum.into(MapSet.new())
   end
 
-  @spec ban_user(Self.t(), any) :: :ok
-  def ban_user(%Self{} = self, id) do
-    true = call_ets(self, :insert, [self.table_users_banned, {id}])
+  @spec ban_user(any) :: :ok
+  def ban_user(id) do
+    find_or_init_user(id)
+    |> Schema.User.update_banned(true)
+    |> Repo.insert_or_update!()
+
     :ok
   end
 
-  def unban_user(%Self{} = self, id) do
-    true = call_ets(self, :delete, [self.table_users_banned, id])
+  def unban_user(id) do
+    find_or_init_user(id)
+    |> Schema.User.update_banned(false)
+    |> Repo.insert_or_update!()
+
     :ok
   end
 
-  def add_new_suggestion(
-        %Self{} = self,
-        %Suggestion{} = data
-      ) do
-    if insert_suggestion(self, data, true) do
-      :ok
-    else
-      :duplication
-    end
+  def add_new_suggestion(%Suggestion{} = data) do
+    Schema.Suggestion.from_core(data)
+    |> Repo.insert!()
+
+    :ok
   end
 
   def bind_moderation_msg_to_suggestion(
-        %Self{} = self,
         file_id,
         message_id
       ) do
-    with {:ok, {_, _, suggestion}} <- lookup_suggestion_by_file_id(self, file_id) do
-      suggestion = Suggestion.bind_moderation_msg(suggestion, message_id)
-      true = insert_suggestion(self, suggestion)
-      :ok
+    Repo.one!(from(s in Schema.Suggestion, where: s.file_id == ^file_id))
+    |> Schema.Suggestion.bind_decision_msg_id(message_id)
+    |> Repo.update!()
+
+    :ok
+  end
+
+  @spec find_suggestion_by_moderation_msg(any) :: :not_found | {:ok, Suggestion.t()}
+  def find_suggestion_by_moderation_msg(msg_id) do
+    case Repo.one(from(s in Schema.Suggestion, where: s.decision_msg_id == ^msg_id)) do
+      nil -> :not_found
+      item -> {:ok, Schema.Suggestion.to_core(item)}
     end
   end
 
-  defp insert_suggestion(
-         %Self{} = self,
-         %Suggestion{} = data,
-         is_new \\ false
-       ) do
-    method = if is_new, do: :insert_new, else: :insert
-
-    # later bind it to something else, not to file_id,
-    # because later there will be media groups
-    call_ets(self, method, [
-      self.table_suggestions,
-      {data.file_id, data.moderation_message_id, data}
-    ])
-  end
-
-  defp lookup_suggestion_by_file_id(%Self{} = self, file_id) do
-    case call_ets(self, :lookup, [self.table_suggestions, file_id]) do
-      [] -> :not_found
-      [data] -> {:ok, data}
-    end
-  end
-
-  @spec find_suggestion_by_moderation_msg(Self.t(), any) :: :not_found | {:ok, Suggestion.t()}
-  def find_suggestion_by_moderation_msg(%Self{} = self, msg_id) do
-    case call_ets(self, :match, [self.table_suggestions, {:_, msg_id, :"$1"}]) do
-      [[%Suggestion{} = data]] -> {:ok, data}
-      [] -> :not_found
-    end
-  end
-
-  @spec find_existing_unapproved_suggestion_by_file_id(Self.t(), any()) ::
+  @spec find_existing_unapproved_suggestion_by_file_id(any()) ::
           :not_found | {:ok, Suggestion.t()}
-  def find_existing_unapproved_suggestion_by_file_id(%Self{} = self, file_id) do
-    lookup_suggestion_by_file_id(self, file_id)
+  def find_existing_unapproved_suggestion_by_file_id(file_id) do
+    case Repo.one(
+           from(s in Schema.Suggestion, where: s.file_id == ^file_id and is_nil(s.decision))
+         ) do
+      nil -> :not_found
+      item -> {:ok, Schema.Suggestion.to_core(item)}
+    end
   end
 
-  @spec approve_media(Self.t(), any(), :nsfw | :sfw) :: :not_found | :ok
-  def approve_media(%Self{} = self, file_id, category \\ :sfw)
+  @spec approve_media(any(), :nsfw | :sfw) :: :not_found | :ok
+  def approve_media(file_id, category \\ :sfw)
       when is_allowed_category(category) do
-    with {:ok, {_, _, suggestion}} <- lookup_suggestion_by_file_id(self, file_id) do
-      # deleting from suggestions
-      true = delete_suggestion(self, file_id)
+    case Repo.one(from(s in Schema.Suggestion, where: s.file_id == ^file_id)) do
+      nil ->
+        :not_found
 
-      # appending to queue
-      true =
-        call_ets(self, :insert, [self.table_queue, {category, suggestion.file_id, suggestion}])
+      item ->
+        Schema.Suggestion.make_decision(item, Atom.to_string(category))
+        |> Repo.update!()
 
-      :ok
+        :ok
     end
   end
 
-  @spec reject_media(Self.t(), any()) :: :ok
-  def reject_media(%Self{} = self, file_id) do
-    true = delete_suggestion(self, file_id)
+  @spec reject_media(any()) :: :ok
+  def reject_media(file_id) do
+    Repo.one!(from(s in Schema.Suggestion, where: s.file_id == ^file_id))
+    |> Schema.Suggestion.make_decision("reject")
+    |> Repo.update!()
+
     :ok
   end
 
-  defp delete_suggestion(%Self{} = self, file_id) do
-    call_ets(self, :delete, [self.table_suggestions, file_id])
+  def get_approved_queue(category) when is_allowed_category(category) do
+    Repo.all(
+      from(s in Schema.Suggestion,
+        where: s.decision == ^Atom.to_string(category) and not s.published
+      )
+    )
+    |> Enum.map(&Schema.Suggestion.to_core/1)
   end
 
-  def get_approved_queue(%Self{} = self, category) when is_allowed_category(category) do
-    case call_ets(self, :lookup, [self.table_queue, category]) do
-      [] -> []
-      items -> Enum.map(items, fn {_, _, x} -> x end)
+  def cancel_approved(file_id) do
+    Repo.one!(from(s in Schema.Suggestion, where: s.file_id == ^file_id))
+    |> Schema.Suggestion.clear_decision()
+    |> Repo.update!()
+
+    :ok
+  end
+
+  def check_as_published(files) when is_list(files) do
+    Repo.update_all(
+      from(s in Schema.Suggestion, where: s.file_id in ^files),
+      set: [published: true]
+    )
+
+    :ok
+  end
+
+  def get_schedule() do
+    case Schema.Schedule |> Repo.one() do
+      nil ->
+        nil
+
+      raw ->
+        case binary_to_term(raw) do
+          %Schedule.Complex{} = x -> x
+        end
     end
   end
 
-  def cancel_approved(%Self{} = self, file_id) do
-    true = call_ets(self, :match_delete, [self.table_queue, {:_, file_id, :_}])
+  def set_schedule(%Schedule.Complex{} = value) do
+    Schema.Schedule
+    |> Repo.delete_all()
+
+    %Schema.Schedule{data: term_to_binary(value)}
+    |> Repo.insert!()
+
     :ok
   end
 
-  def commit_as_flushed(%Self{} = self, files) when is_list(files) do
-    Enum.each(files, &cancel_approved(self, &1))
-    :ok
-  end
-
-  def get_schedule(%Self{} = self) do
-    case call_ets(self, :lookup, [self.table_schedule, :schedule]) do
-      [%Schedule.Complex{} = value] -> value
-      [] -> nil
+  def get_chat_state(key) do
+    case Repo.one(from(cs in Schema.ChatState, where: cs.key == ^key)) do
+      nil -> nil
+      %Schema.ChatState{data: raw} -> binary_to_term(raw)
     end
   end
 
-  def set_schedule(%Self{} = self, %Schedule.Complex{} = value) do
-    true = call_ets(self, :insert, [self.table_schedule, {:schedule, value}])
-    :ok
-  end
-
-  def get_chat_state(%Self{} = self, key) do
-    case call_ets(self, :lookup, [self.table_chat_state, key]) do
-      [] -> nil
-      [{_, state}] -> state
+  def set_chat_state(key, state) do
+    case Repo.one(from(cs in Schema.ChatState, where: cs.key == ^key)) do
+      nil -> %Schema.ChatState{key: key}
+      state -> state
     end
-  end
+    |> Ecto.Changeset.change(data: term_to_binary(state))
+    |> Repo.insert_or_update!()
 
-  def set_chat_state(%Self{} = self, key, state) do
-    true = call_ets(self, :insert, [self.table_chat_state, {key, state}])
     :ok
   end
 end

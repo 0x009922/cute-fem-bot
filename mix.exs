@@ -7,7 +7,8 @@ defmodule CuteFemBot.MixProject do
       version: "0.1.0",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      aliases: aliases()
     ]
   end
 
@@ -15,7 +16,7 @@ defmodule CuteFemBot.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {CuteFemBot.Application, []}
+      mod: if(Mix.env() == :test, do: [], else: {CuteFemBot.Application, []})
     ]
   end
 
@@ -28,7 +29,18 @@ defmodule CuteFemBot.MixProject do
       {:json, "~> 1.4"},
       {:crontab, "~> 1.1.10"},
       {:plug_cowboy, "~> 2.0"},
-      {:zoneinfo, "~> 0.1.0"}
+      {:zoneinfo, "~> 0.1.0"},
+      {:ecto_sqlite3, "~> 0.7.3"}
     ]
   end
+
+  defp aliases() do
+    [
+      test: ["ecto.drop", "ecto.create", "ecto.migrate", "test"]
+    ]
+  end
+
+  # defp elixirc_paths(:test) do
+  #   ["lib", "priv/repo/migrations"]
+  # end
 end

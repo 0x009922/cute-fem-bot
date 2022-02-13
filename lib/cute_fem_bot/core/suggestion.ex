@@ -6,7 +6,7 @@ defmodule CuteFemBot.Core.Suggestion do
     field(:type, :photo | :video | :document, enforce: true)
     field(:file_id, String.t(), enforce: true)
     field(:user_id, String.t(), enforce: true)
-    field(:moderation_message_id, any(), default: nil)
+    field(:decision_msg_id, any(), default: nil)
   end
 
   alias __MODULE__, as: Self
@@ -56,7 +56,7 @@ defmodule CuteFemBot.Core.Suggestion do
     }
   end
 
-  def bind_moderation_msg(%Self{} = self, msg_id) do
-    %Self{self | moderation_message_id: msg_id}
+  def bind_decision_message(%Self{} = self, msg_id) do
+    %Self{self | decision_msg_id: msg_id}
   end
 end

@@ -5,124 +5,123 @@ defmodule CuteFemBotPersistenceTest do
   alias CuteFemBot.Core.Suggestion
 
   setup do
-    pers = Persistence.init_ets()
-    %{pers: pers}
+    Ecto.Adapters.SQL.Sandbox.checkout(CuteFemBot.Repo)
   end
 
-  test "initially ban list is empty", %{pers: pers} do
-    assert Persistence.get_ban_list(pers) == MapSet.new()
+  test "initially ban list is empty" do
+    assert Persistence.get_ban_list() == MapSet.new()
   end
 
-  test "unbanning user that is not banned", %{pers: pers} do
-    assert Persistence.unban_user(pers, 999) == :ok
+  test "unbanning user that is not banned" do
+    assert Persistence.unban_user(999) == :ok
   end
 
-  test "getting user meta for unknown user", %{pers: pers} do
-    assert Persistence.get_user_meta(pers, 99) == :not_found
+  test "getting user meta for unknown user" do
+    assert Persistence.get_user_meta(99) == :not_found
   end
 
-  test "updating user meta", %{pers: pers} do
-    assert Persistence.update_user_meta(pers, %{"id" => 1414, "first_name" => "Test"}) ==
+  test "updating user meta" do
+    assert Persistence.update_user_meta(%{"id" => 1414, "first_name" => "Test"}) ==
              :ok
 
-    assert Persistence.get_user_meta(pers, 1414) ==
+    assert Persistence.get_user_meta(1414) ==
              {:ok, %{"id" => 1414, "first_name" => "Test"}}
   end
 
-  test "banning user", %{pers: pers} do
-    Persistence.ban_user(pers, 9)
+  test "banning user" do
+    Persistence.ban_user(9)
 
-    assert 9 in Persistence.get_ban_list(pers)
+    assert 9 in Persistence.get_ban_list()
   end
 
-  test "unbanning user", %{pers: pers} do
-    Persistence.ban_user(pers, 19)
-    Persistence.unban_user(pers, 19)
+  test "unbanning user" do
+    Persistence.ban_user(19)
+    Persistence.unban_user(19)
 
-    assert 19 not in Persistence.get_ban_list(pers)
+    assert 19 not in Persistence.get_ban_list()
   end
 
-  test "registering suggestion and then fetching it", %{pers: pers} do
-    data = Suggestion.new(:photo, 4, 9)
+  test "registering suggestion and then fetching it" do
+    data = Suggestion.new(:photo, "file", 9)
 
-    assert Persistence.add_new_suggestion(pers, data) == :ok
-    assert Persistence.bind_moderation_msg_to_suggestion(pers, 4, 99) == :ok
+    assert Persistence.add_new_suggestion(data) == :ok
+    assert Persistence.bind_moderation_msg_to_suggestion("file", 99) == :ok
 
-    assert Persistence.find_suggestion_by_moderation_msg(pers, 99) ==
-             {:ok, data |> Suggestion.bind_moderation_msg(99)}
+    assert Persistence.find_suggestion_by_moderation_msg(99) ==
+             {:ok, data |> Suggestion.bind_decision_message(99)}
   end
 
-  test "suggestion not found if not added", %{pers: pers} do
-    assert Persistence.find_suggestion_by_moderation_msg(pers, 10) == :not_found
+  test "suggestion not found if not added" do
+    assert Persistence.find_suggestion_by_moderation_msg(10) == :not_found
   end
 
-  test "approving media", %{pers: pers} do
-    data = Suggestion.new(:photo, 4, 9)
+  test "approving media" do
+    data = Suggestion.new(:photo, "file1", 9)
 
-    assert Persistence.add_new_suggestion(pers, data) == :ok
-    assert Persistence.bind_moderation_msg_to_suggestion(pers, 4, 99) == :ok
-    assert Persistence.approve_media(pers, 4, :sfw) == :ok
-    assert Persistence.find_suggestion_by_moderation_msg(pers, 99) == :not_found
+    assert Persistence.add_new_suggestion(data) == :ok
+    assert Persistence.bind_moderation_msg_to_suggestion("file1", 99) == :ok
+    assert Persistence.approve_media("file1", :sfw) == :ok
+    assert Persistence.find_suggestion_by_moderation_msg(99) == :not_found
 
-    assert Persistence.get_approved_queue(pers, :sfw) == [
-             data |> Suggestion.bind_moderation_msg(99)
+    assert Persistence.get_approved_queue(:sfw) == [
+             data
            ]
 
-    assert Persistence.get_approved_queue(pers, :nsfw) == []
+    assert Persistence.get_approved_queue(:nsfw) == []
   end
 
-  test "rejecting media", %{pers: pers} do
-    data = Suggestion.new(:photo, 4, 9)
+  test "rejecting media" do
+    data = Suggestion.new(:photo, "photo", 9)
 
-    assert Persistence.add_new_suggestion(pers, data) == :ok
-    assert Persistence.bind_moderation_msg_to_suggestion(pers, 4, 99) == :ok
-    assert Persistence.reject_media(pers, 4) == :ok
-    assert Persistence.find_suggestion_by_moderation_msg(pers, 5) == :not_found
-    assert Persistence.get_approved_queue(pers, :sfw) == []
-    assert Persistence.get_approved_queue(pers, :nsfw) == []
+    assert Persistence.add_new_suggestion(data) == :ok
+    assert Persistence.bind_moderation_msg_to_suggestion("photo", 99) == :ok
+    assert Persistence.reject_media("photo") == :ok
+    assert Persistence.find_suggestion_by_moderation_msg(5) == :not_found
+    assert Persistence.get_approved_queue(:sfw) == []
+    assert Persistence.get_approved_queue(:nsfw) == []
   end
 
-  test "adding the same unapproved file again", %{pers: pers} do
-    data = Suggestion.new(:photo, 4, 9)
+  test "adding the same unapproved file again" do
+    data = Suggestion.new(:photo, "photo", 9)
 
-    assert Persistence.add_new_suggestion(pers, data) == :ok
-    assert Persistence.add_new_suggestion(pers, data) == :duplication
+    assert Persistence.add_new_suggestion(data) == :ok
+    assert_raise(Ecto.ConstraintError, fn -> Persistence.add_new_suggestion(data) end)
   end
 
-  test "committing files flushing", %{pers: pers} do
-    file1 = Suggestion.new(:photo, 0, 0)
-    file2 = Suggestion.new(:photo, 1, 0)
+  test "committing files flushing" do
+    file1 = Suggestion.new(:photo, "0", 0)
+    file2 = Suggestion.new(:photo, "1", 0)
 
     [
       file1,
       file2
     ]
     |> Enum.each(fn f ->
-      Persistence.add_new_suggestion(pers, f)
-      Persistence.approve_media(pers, f.file_id, :nsfw)
+      Persistence.add_new_suggestion(f)
+      Persistence.approve_media(f.file_id, :nsfw)
     end)
 
-    Persistence.commit_as_flushed(pers, [1, 0])
+    Persistence.check_as_published(["1", "0"])
 
-    assert Persistence.get_approved_queue(pers, :nsfw) == []
+    assert Persistence.get_approved_queue(:nsfw) == []
   end
 
-  test "setting & getting chat states", %{pers: pers} do
-    assert Persistence.get_chat_state(pers, 55) == nil
-    assert Persistence.set_chat_state(pers, 55, :test) == :ok
-    assert Persistence.get_chat_state(pers, 55) == :test
-    assert Persistence.get_chat_state(pers, 99) == nil
-    assert Persistence.set_chat_state(pers, 55, :foo) == :ok
-    assert Persistence.get_chat_state(pers, 55) == :foo
+  test "setting & getting chat states" do
+    assert Persistence.get_chat_state("55") == nil
+    assert Persistence.set_chat_state("55", :test) == :ok
+    assert Persistence.get_chat_state("55") == :test
+    assert Persistence.get_chat_state("99") == nil
+    assert Persistence.set_chat_state("55", :foo) == :ok
+    assert Persistence.get_chat_state("55") == :foo
   end
 
-  test "cancelling approved suggestion", %{pers: pers} do
+  test "cancelling approved suggestion" do
     suggestion = Suggestion.new(:photo, "nya", 9919)
 
-    Persistence.add_new_suggestion(pers, suggestion)
-    Persistence.approve_media(pers, "nya", :sfw)
+    Persistence.add_new_suggestion(suggestion)
+    Persistence.approve_media("nya", :sfw)
 
-    assert Persistence.cancel_approved(pers, "nya") == :ok
-    assert Persistence.get_approved_queue(pers, :sfw) == []
+    assert Persistence.cancel_approved("nya") == :ok
+    assert Persistence.get_approved_queue(:sfw) == []
   end
 end
