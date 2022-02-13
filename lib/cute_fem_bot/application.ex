@@ -30,6 +30,13 @@ defmodule CuteFemBot.Application do
         api: CuteFemBot.Telegram.Api, config: cfg_ref
       },
       {
+        CuteFemBot.Logic.Stats,
+        deps: %{
+          telegram: CuteFemBot.Telegram.Api,
+          cfg: cfg_ref
+        }
+      },
+      {
         CuteFemBot.Logic.Handler,
         name: CuteFemBot.Logic.Handler,
         api: CuteFemBot.Telegram.Api,

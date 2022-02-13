@@ -17,10 +17,12 @@ defmodule CuteFemBot.Logic.Handler.Suggestions do
 
   def banlist_guard(ctx) do
     ban_list = Persistence.get_ban_list()
+    user_id = ctx_get_user_id(ctx)
 
-    if ctx_get_user_id(ctx) in ban_list do
+    if user_id in ban_list do
       case ctx.update do
         {:message, _} ->
+          CuteFemBot.Logic.Stats.banned_user_acted(user_id)
           reply_ignore!(ctx)
 
         _ ->
