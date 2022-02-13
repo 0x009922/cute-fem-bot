@@ -124,4 +124,28 @@ defmodule CuteFemBotPersistenceTest do
     assert Persistence.cancel_approved("nya") == :ok
     assert Persistence.get_approved_queue(:sfw) == []
   end
+
+  describe "Working with schedule" do
+    test "When it is not set, nil is returned" do
+      assert Persistence.get_schedule() == nil
+    end
+
+    test "When it is set, value is returned" do
+      {:ok, value} = CuteFemBot.Core.Schedule.Complex.from_raw("sfw;1;*")
+
+      Persistence.set_schedule(value)
+
+      assert Persistence.get_schedule() == value
+    end
+
+    test "When value is updated, new value is returned" do
+      {:ok, v1} = CuteFemBot.Core.Schedule.Complex.from_raw("sfw;1;*")
+      {:ok, v2} = CuteFemBot.Core.Schedule.Complex.from_raw("nsfw;2;*")
+
+      Persistence.set_schedule(v1)
+      Persistence.set_schedule(v2)
+
+      assert Persistence.get_schedule() == v2
+    end
+  end
 end

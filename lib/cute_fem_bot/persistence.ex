@@ -162,7 +162,7 @@ defmodule CuteFemBot.Persistence do
       nil ->
         nil
 
-      raw ->
+      %Schema.Schedule{data: raw} ->
         case binary_to_term(raw) do
           %Schedule.Complex{} = x -> x
         end
