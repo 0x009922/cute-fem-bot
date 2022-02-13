@@ -19,7 +19,6 @@ RUN mix release --path dist
 
 RUN mkdir data
 COPY docker_entry.sh ./
-COPY config.yml ./
 
 # EXPOSE 3000
 CMD [ "/bin/sh", "docker_entry.sh" ]
