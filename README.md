@@ -7,7 +7,7 @@
 ## Тесты
 
 ```bash
-MIX_ENV=test mix test
+MIX_ENV=test mix test --no-start
 ```
 
 > Важно указать `MIX_ENV=test`, чтобы сработала подготовка **тестовой** БД.
