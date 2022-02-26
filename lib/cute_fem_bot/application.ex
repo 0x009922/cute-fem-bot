@@ -9,7 +9,7 @@ defmodule CuteFemBot.Application do
   def start(_type, _args) do
     cfg =
       case CuteFemBot.Config.read_cfg() do
-        {:ok, cfg} ->
+        {:ok, %CuteFemBot.Config{} = cfg} ->
           Logger.debug("Loaded config: #{inspect(cfg)}")
           cfg
 
@@ -23,43 +23,60 @@ defmodule CuteFemBot.Application do
       CuteFemBot.Logic.Handler.handle(CuteFemBot.Logic.Handler, update)
     end
 
+    telegram = CuteFemBot.Telegram
+    finch = CuteFemBot.Finch
+
     children = [
       CuteFemBot.Repo,
+      CuteFemBot.Server,
+      {Cachex, name: CuteFemBot.Server.Bridge.Cachex, limit: 100},
       {
-        CuteFemBot.Telegram.Api.Supervisor,
-        api: CuteFemBot.Telegram.Api, config: cfg_ref
+        CuteFemBot.Server.Bridge,
+        telegram: telegram, config: cfg_ref, finch: finch, cache: CuteFemBot.Server.Bridge.Cachex
       },
       {
-        CuteFemBot.Logic.Stats,
-        deps: %{
-          telegram: CuteFemBot.Telegram.Api,
-          cfg: cfg_ref
+        Finch,
+        name: CuteFemBot.Finch
+      },
+      {
+        Telegram.Api,
+        name: telegram,
+        config: %Telegram.Api.Config{
+          finch: finch,
+          token: cfg.api_token
         }
       },
+      # {
+      #   CuteFemBot.Logic.Stats,
+      #   deps: %{
+      #     telegram: telegram,
+      #     cfg: cfg_ref
+      #   }
+      # },
       {
         CuteFemBot.Logic.Handler,
         name: CuteFemBot.Logic.Handler,
-        api: CuteFemBot.Telegram.Api,
+        api: telegram,
         config: cfg_ref,
         posting: CuteFemBot.Logic.Posting
       },
-      {
-        CuteFemBot.Logic.Posting,
-        name: CuteFemBot.Logic.Posting,
-        deps: %{
-          api: CuteFemBot.Telegram.Api,
-          config: cfg_ref
-        }
-      },
-      {
-        CuteFemBot.Logic.Tasks.SetCommands,
-        deps: %{
-          api: CuteFemBot.Telegram.Api,
-          config: cfg_ref
-        }
-      },
+      # {
+      #   CuteFemBot.Logic.Posting,
+      #   name: CuteFemBot.Logic.Posting,
+      #   deps: %{
+      #     api: telegram,
+      #     config: cfg_ref
+      #   }
+      # },
+      # {
+      #   CuteFemBot.Logic.Tasks.SetCommands,
+      #   deps: %{
+      #     api: telegram,
+      #     config: cfg_ref
+      #   }
+      # },
       updater_spec(%{
-        api: CuteFemBot.Telegram.Api,
+        api: telegram,
         config: cfg_ref,
         handler_fun: handle_update_fun
       })
@@ -76,7 +93,7 @@ defmodule CuteFemBot.Application do
     case approach do
       :long_polling ->
         {
-          CuteFemBot.Telegram.Updater,
+          Telegram.Updater,
           [
             :long_polling,
             interval: lp_interval,
@@ -87,7 +104,7 @@ defmodule CuteFemBot.Application do
 
       :webhook ->
         {
-          CuteFemBot.Telegram.Updater,
+          Telegram.Updater,
           [
             :webhook,
             deps: %{

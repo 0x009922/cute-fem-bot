@@ -1,7 +1,7 @@
 defmodule CuteFemBot.Logic.Handler.SuggestionsAdmin do
   alias CuteFemBot.Persistence
-  alias CuteFemBot.Telegram.Api
-  alias CuteFemBot.Telegram.Types.Message
+  alias Telegram.Api
+  alias Telegram.Types.Message
   alias CuteFemBot.Logic.Handler
   alias Handler.Ctx
   alias CuteFemBot.Core.Suggestion

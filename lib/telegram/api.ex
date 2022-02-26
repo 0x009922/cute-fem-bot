@@ -1,35 +1,36 @@
-defmodule CuteFemBot.Telegram.Api do
-  use GenServer
+defmodule Telegram.Api do
   require Logger
-  alias CuteFemBot.Telegram.Api.Context
+
+  use GenServer
+
+  alias Telegram.Api.Config
 
   def start_link(opts) do
-    {%Context{} = ctx, opts} = Keyword.pop!(opts, :ctx)
+    {name, opts} = Keyword.pop!(opts, :name)
+    {%Config{} = cfg, _} = Keyword.pop!(opts, :config)
 
-    GenServer.start_link(__MODULE__, ctx, opts)
+    GenServer.start_link(__MODULE__, cfg, name: name)
   end
 
   @impl true
-  def init(%Context{} = ctx) do
-    {:ok, ctx}
+  def init(%Config{} = cfg) do
+    {:ok, cfg}
   end
 
   @impl true
-  def handle_call({:make_request, opts}, _from, ctx) do
-    {:reply, make_request(ctx, opts), ctx}
+  def handle_call({:make_request, opts}, _from, cfg) do
+    {:reply, make_request(cfg, opts), cfg}
   end
 
   @impl true
-  def handle_cast({:make_request, opts}, ctx) do
-    make_request(ctx, opts)
-    {:noreply, ctx}
+  def handle_cast({:make_request, opts}, cfg) do
+    make_request(cfg, opts)
+    {:noreply, cfg}
   end
 
-  defp make_request(%Context{finch: finch, config: cfg}, opts) do
+  defp make_request(%Config{finch: finch, token: token}, opts) do
     method_name = Keyword.fetch!(opts, :method_name)
     body = Keyword.get(opts, :body, nil)
-
-    %CuteFemBot.Config{api_token: token} = CuteFemBot.Config.State.lookup!(cfg)
 
     request_data = fn -> "method: #{method_name}; body: #{inspect(body)}" end
 
@@ -56,7 +57,7 @@ defmodule CuteFemBot.Telegram.Api do
 
   defp prepare_body(nil), do: nil
   defp prepare_body(str) when is_binary(str), do: str
-  defp prepare_body(body), do: JSON.encode!(body)
+  defp prepare_body(body), do: Poison.encode!(body)
 
   defp do_request_with_retries(finch, token, method_name, request_body) do
     request_body = prepare_body(request_body)
@@ -65,7 +66,7 @@ defmodule CuteFemBot.Telegram.Api do
 
     case Finch.Request.build(
            :post,
-           "https://api.telegram.org/bot#{token}/#{method_name}",
+           Telegram.Util.href_api(token, method_name),
            %{"content-type" => "application/json"},
            request_body,
            []
@@ -75,7 +76,7 @@ defmodule CuteFemBot.Telegram.Api do
         {:error, :http, err}
 
       {:ok, %Finch.Response{body: response_body}} ->
-        case JSON.decode!(response_body) do
+        case Poison.decode!(response_body) do
           %{"ok" => true, "result" => result} ->
             {:ok, result}
 

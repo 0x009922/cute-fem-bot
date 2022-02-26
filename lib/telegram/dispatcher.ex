@@ -1,4 +1,4 @@
-defmodule CuteFemBot.Telegram.Dispatcher do
+defmodule Telegram.Dispatcher do
   @moduledoc """
   Supervisable server that dispatches updates to the passed handler.
   """

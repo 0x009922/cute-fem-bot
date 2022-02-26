@@ -1,7 +1,7 @@
 defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
   alias CuteFemBot.Core.Schedule
-  alias CuteFemBot.Telegram.Types.Message
-  alias CuteFemBot.Telegram.Api
+  alias Telegram.Types.Message
+  alias Telegram.Api
   alias CuteFemBot.Persistence
   alias CuteFemBot.Logic.Handler.Ctx
 
@@ -80,7 +80,7 @@ defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
 
                   case action_result do
                     :ok ->
-                      CuteFemBot.Telegram.Api.answer_callback_query(Ctx.deps_api(ctx), query_id)
+                      Telegram.Api.answer_callback_query(Ctx.deps_api(ctx), query_id)
                       :ok
 
                     :error ->

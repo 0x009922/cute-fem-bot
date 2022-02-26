@@ -3,8 +3,8 @@ defmodule CuteFemBot.Logic.Handler do
 
   alias __MODULE__.Entry
   alias __MODULE__.Ctx
-  alias CuteFemBot.Telegram.Api
-  alias CuteFemBot.Telegram.Types.Message
+  alias Telegram.Api
+  alias Telegram.Types.Message
 
   require Logger
 

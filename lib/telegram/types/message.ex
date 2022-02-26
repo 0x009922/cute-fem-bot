@@ -1,4 +1,4 @@
-defmodule CuteFemBot.Telegram.Types.Message do
+defmodule Telegram.Types.Message do
   def new() do
     %{}
   end

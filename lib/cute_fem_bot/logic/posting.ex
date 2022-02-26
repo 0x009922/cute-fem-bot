@@ -51,7 +51,7 @@ defmodule CuteFemBot.Logic.Posting do
         # user = CuteFemBot.Logic.Util.user_html_link_using_meta(deps.persistence, user_id)
         # caption = "Предложка: #{user}"
 
-        CuteFemBot.Telegram.Api.request!(deps.api,
+        Telegram.Api.request!(deps.api,
           method_name: method,
           body:
             %{

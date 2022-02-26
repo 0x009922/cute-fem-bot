@@ -1,10 +1,10 @@
-defmodule CuteFemBot.Telegram.Updater.LongPolling.Poller do
+defmodule Telegram.Updater.LongPolling.Poller do
   @moduledoc """
   Simple service that periodically fetches updates from Telegram
   """
 
-  alias CuteFemBot.Telegram.Api
-  alias CuteFemBot.Telegram.Updater.LongPolling
+  alias Telegram.Api
+  alias Telegram.Updater.LongPolling
   alias LongPolling.Config
   alias LongPolling.State
 
@@ -23,7 +23,7 @@ defmodule CuteFemBot.Telegram.Updater.LongPolling.Poller do
              body: %{"offset" => compute_offset(state.greatest_known_update_id)}
            ) do
         {:ok, updates} ->
-          CuteFemBot.Telegram.Dispatcher.dispatch_incoming_updates(cfg.dispatcher, updates)
+          Telegram.Dispatcher.dispatch_incoming_updates(cfg.dispatcher, updates)
 
           if length(updates) > 0 do
             %{"update_id" => id} = Enum.fetch!(updates, -1)

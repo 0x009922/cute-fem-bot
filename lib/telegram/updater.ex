@@ -1,4 +1,4 @@
-defmodule CuteFemBot.Telegram.Updater do
+defmodule Telegram.Updater do
   @moduledoc """
   A service that watches for updates at Telegram and fires callback. May support
   both long-polling approach or webhook-based (TODO)
@@ -7,7 +7,7 @@ defmodule CuteFemBot.Telegram.Updater do
   use Supervisor
 
   alias __MODULE__.LongPolling
-  alias CuteFemBot.Telegram.Dispatcher
+  alias Telegram.Dispatcher
 
   def start_link(args) do
     Supervisor.start_link(__MODULE__, args, name: __MODULE__)
@@ -33,22 +33,24 @@ defmodule CuteFemBot.Telegram.Updater do
     Supervisor.init(children, strategy: :one_for_one)
   end
 
-  def init([:webhook | opts]) do
-    deps = Keyword.fetch!(opts, :deps)
-    handler = Keyword.fetch!(opts, :handler_fun)
+  def init([:webhook | _opts]) do
+    raise "WebHook-based updater is not supported (yet)"
 
-    children = [
-      {CuteFemBot.Telegram.Updater.Webhook.TaskSet, deps: deps},
-      {
-        CuteFemBot.Telegram.Updater.Webhook.Listener,
-        %{
-          config: deps.config,
-          dispatcher: Dispatcher
-        }
-      },
-      {Dispatcher, [handler, name: Dispatcher]}
-    ]
+    # deps = Keyword.fetch!(opts, :deps)
+    # handler = Keyword.fetch!(opts, :handler_fun)
 
-    Supervisor.init(children, strategy: :one_for_one)
+    # children = [
+    #   {Telegram.Updater.Webhook.TaskSet, deps: deps},
+    #   {
+    #     Telegram.Updater.Webhook.Listener,
+    #     %{
+    #       config: deps.config,
+    #       dispatcher: Dispatcher
+    #     }
+    #   },
+    #   {Dispatcher, [handler, name: Dispatcher]}
+    # ]
+
+    # Supervisor.init(children, strategy: :one_for_one)
   end
 end

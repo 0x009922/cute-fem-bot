@@ -2,8 +2,8 @@ defmodule CuteFemBot.Logic.Stats do
   defmodule State do
     use TypedStruct
     alias __MODULE__, as: Self
-    alias CuteFemBot.Telegram.Api
-    alias CuteFemBot.Telegram.Types.Message
+    alias Telegram.Api
+    alias Telegram.Types.Message
     alias CuteFemBot.Config
 
     typedstruct do

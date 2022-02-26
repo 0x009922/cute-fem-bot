@@ -4,6 +4,7 @@ defmodule CuteFemBot.Core.Suggestion do
 
   typedstruct do
     field(:type, :photo | :video | :document, enforce: true)
+    field(:mime_type, String.t(), default: nil)
     field(:file_id, String.t(), enforce: true)
     field(:user_id, String.t(), enforce: true)
     field(:decision_msg_id, any(), default: nil)
@@ -24,15 +25,16 @@ defmodule CuteFemBot.Core.Suggestion do
 
     result =
       case msg do
-        %{"photo" => [%{"file_id" => file_id} | _]} ->
-          {:photo, file_id}
+        %{"photo" => sizes} ->
+          %{"file_id" => file_id} = Enum.max_by(sizes, &Map.fetch!(&1, "file_size"))
+          {:photo, file_id, nil}
 
-        %{"video" => %{"file_id" => file_id}} ->
-          {:video, file_id}
+        %{"video" => %{"file_id" => file_id, "mime_type" => mime}} ->
+          {:video, file_id, mime}
 
         %{"document" => %{"file_id" => file_id, "mime_type" => mime}} ->
           if mime =~ ~r{^(image|video)\/} do
-            {:document, file_id}
+            {:document, file_id, mime}
           else
             :none
           end
@@ -42,8 +44,19 @@ defmodule CuteFemBot.Core.Suggestion do
       end
 
     case result do
-      :none -> :none
-      {type, file_id} -> {:ok, %Self{type: type, file_id: file_id, user_id: user_id}}
+      :none ->
+        :none
+
+      {type, file_id, mime} ->
+        {
+          :ok,
+          %Self{
+            type: type,
+            file_id: file_id,
+            user_id: user_id,
+            mime_type: mime
+          }
+        }
     end
   end
 

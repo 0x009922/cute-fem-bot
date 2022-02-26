@@ -26,11 +26,13 @@ defmodule CuteFemBot.MixProject do
       {:finch, "~> 0.10"},
       {:typed_struct, "~> 0.2.1"},
       {:yaml_elixir, "~> 2.8.0"},
-      {:json, "~> 1.4"},
+      {:poison, "~> 5.0"},
       {:crontab, "~> 1.1.10"},
       {:plug_cowboy, "~> 2.0"},
       {:zoneinfo, "~> 0.1.0"},
-      {:ecto_sqlite3, "~> 0.7.3"}
+      {:ecto_sqlite3, "~> 0.7.3"},
+      {:cachex, "~> 3.4"},
+      {:elixir_uuid, "~> 1.2"}
     ]
   end
 

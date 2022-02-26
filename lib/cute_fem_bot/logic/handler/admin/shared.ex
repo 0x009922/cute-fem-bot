@@ -1,5 +1,5 @@
 defmodule CuteFemBot.Logic.Handler.Admin.Shared do
-  alias CuteFemBot.Telegram.Types.Message
+  alias Telegram.Types.Message
 
   def raise_invalid_chat_state!(ctx, state) do
     send_msg!(ctx, %{
@@ -19,7 +19,7 @@ defmodule CuteFemBot.Logic.Handler.Admin.Shared do
   """
   def send_msg!(ctx, body) do
     {:ok, x} =
-      CuteFemBot.Telegram.Api.send_message(
+      Telegram.Api.send_message(
         ctx.deps.api,
         Message.new()
         |> Message.set_chat_id(get_admin_id(ctx))

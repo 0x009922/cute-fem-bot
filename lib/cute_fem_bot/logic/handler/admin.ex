@@ -7,7 +7,7 @@ defmodule CuteFemBot.Logic.Handler.Admin do
   alias Self.Shared
   alias Self.Queue
   alias Self.Schedule
-  alias CuteFemBot.Telegram.Types.Message
+  alias Telegram.Types.Message
   alias CuteFemBot.Persistence
   alias CuteFemBot.Logic
 

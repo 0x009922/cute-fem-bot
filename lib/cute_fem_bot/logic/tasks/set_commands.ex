@@ -53,7 +53,7 @@ defmodule CuteFemBot.Logic.Tasks.SetCommands do
   end
 
   defp delete_commands(api, scope, lang) do
-    CuteFemBot.Telegram.Api.request_cast(api,
+    Telegram.Api.request_cast(api,
       method_name: "deleteMyCommands",
       body:
         %{
@@ -64,7 +64,7 @@ defmodule CuteFemBot.Logic.Tasks.SetCommands do
   end
 
   defp set_commands(api, scope, commands, lang) do
-    CuteFemBot.Telegram.Api.request_cast(api,
+    Telegram.Api.request_cast(api,
       method_name: "setMyCommands",
       body:
         %{
