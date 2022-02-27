@@ -57,7 +57,7 @@ defmodule Telegram.Api do
 
   defp prepare_body(nil), do: nil
   defp prepare_body(str) when is_binary(str), do: str
-  defp prepare_body(body), do: Poison.encode!(body)
+  defp prepare_body(body), do: Jason.encode!(body)
 
   defp do_request_with_retries(finch, token, method_name, request_body) do
     request_body = prepare_body(request_body)
@@ -76,7 +76,7 @@ defmodule Telegram.Api do
         {:error, :http, err}
 
       {:ok, %Finch.Response{body: response_body}} ->
-        case Poison.decode!(response_body) do
+        case Jason.decode!(response_body) do
           %{"ok" => true, "result" => result} ->
             {:ok, result}
 

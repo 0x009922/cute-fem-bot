@@ -4,7 +4,7 @@ defmodule CuteFemBot.Schema.Suggestion do
   alias CuteFemBot.Schema.Suggestion, as: Self
 
   @primary_key false
-  @derive {Poison.Encoder, only: [:file_id, :file_type, :suggestor_id, :decision, :published]}
+  @derive {Jason.Encoder, only: [:file_id, :file_type, :suggestor_id, :decision, :published]}
   schema "suggestions" do
     field(:file_id, :string, primary_key: true)
 
@@ -56,5 +56,11 @@ defmodule CuteFemBot.Schema.Suggestion do
 
   def published(self) do
     self |> change(published: true)
+  end
+
+  def changeset_web(%Self{} = self, params) do
+    self
+    |> cast(params, [:decision])
+    |> validate_inclusion(:decision, [nil | ~w(sfw nsfw)])
   end
 end

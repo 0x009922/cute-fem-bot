@@ -16,4 +16,8 @@ defmodule CuteFemBot.Schema.User do
     user
     |> change(banned: flag)
   end
+
+  def decode_meta(user) do
+    :erlang.binary_to_term(user.meta)
+  end
 end
