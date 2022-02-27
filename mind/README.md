@@ -1,4 +1,4 @@
-# cute-fem-bot
+# Cute Fem Bot Mind
 
 ## Конфиг и данные
 
