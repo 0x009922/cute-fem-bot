@@ -36,7 +36,7 @@ defmodule CuteFemBot.Application do
       {
         CuteFemBotWeb.Bridge,
         telegram: telegram, config: cfg_ref, finch: finch, cache: bridge_cache, web_auth: web_auth
-      }
+      },
       # {
       #   Task,
       #   fn ->
@@ -44,18 +44,18 @@ defmodule CuteFemBot.Application do
       #     Logger.debug("Debug key: #{key}")
       #   end
       # }
-      # {
-      #   Finch,
-      #   name: CuteFemBot.Finch
-      # },
-      # {
-      #   Telegram.Api,
-      #   name: telegram,
-      #   config: %Telegram.Api.Config{
-      #     finch: finch,
-      #     token: cfg.api_token
-      #   }
-      # },
+      {
+        Finch,
+        name: CuteFemBot.Finch
+      },
+      {
+        Telegram.Api,
+        name: telegram,
+        config: %Telegram.Api.Config{
+          finch: finch,
+          token: cfg.api_token
+        }
+      }
       # {
       #   CuteFemBot.Logic.Stats,
       #   deps: %{

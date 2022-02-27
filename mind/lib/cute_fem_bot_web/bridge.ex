@@ -125,8 +125,18 @@ defmodule CuteFemBotWeb.Bridge do
 
     content_type =
       case try_find_mime_type(file_id) do
-        nil -> Keyword.fetch!(resp.headers, "content-type")
-        x -> x
+        nil ->
+          [single] =
+            resp.headers
+            |> Stream.filter(fn {name, _} -> name == "content-type" end)
+            |> Stream.map(fn {_, value} -> value end)
+            |> Stream.concat(["application/octet-stream"])
+            |> Enum.take(1)
+
+          single
+
+        x ->
+          x
       end
 
     IO.inspect(resp, label: "resp")

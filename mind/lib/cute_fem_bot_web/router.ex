@@ -13,6 +13,6 @@ defmodule CuteFemBotWeb.Router do
 
     resources("/suggestions", Controllers.Suggestions, only: [:index, :update], param: "file_id")
 
-    get("/file/:file_id", Controllers.File, :show)
+    get("/files/:file_id", Controllers.File, :show)
   end
 end

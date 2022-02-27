@@ -1,7 +1,7 @@
 defmodule CuteFemBotWeb.Controllers.File do
   use CuteFemBotWeb, :controller
 
-  def show(conn, %{file_id: id}) do
+  def show(conn, %{"file_id" => id}) do
     {content_type, binary} = CuteFemBotWeb.Bridge.get_file(id)
 
     conn
