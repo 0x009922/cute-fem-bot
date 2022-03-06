@@ -12,11 +12,11 @@ const ru = computed(() => SUGGESTION_TYPE_RU[props.value])
 <template>
   <span
     :class="[
-      'border rounded px-1 text-sm',
+      'bg-white p-1 rounded border text-sm shadow-xl',
       {
-        'border-blue-500 text-blue-500': value === 'photo',
-        'border-orange-500 text-orange-500': value === 'video',
-        'border-purple-500 text-purple-500': value === 'document',
+        'text-blue-500': value === 'photo',
+        'text-orange-500': value === 'video',
+        'text-purple-500': value === 'document',
       },
     ]"
   >

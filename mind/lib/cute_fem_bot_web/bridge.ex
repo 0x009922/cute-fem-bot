@@ -139,9 +139,6 @@ defmodule CuteFemBotWeb.Bridge do
           x
       end
 
-    IO.inspect(resp, label: "resp")
-    IO.inspect(content_type, label: "type")
-
     {:reply, {content_type, resp.body}, state}
   end
 

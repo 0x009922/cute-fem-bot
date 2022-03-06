@@ -6,6 +6,7 @@ defmodule CuteFemBotWeb.Controllers.File do
 
     conn
     |> put_resp_content_type(content_type)
+    |> put_resp_header("cache-control", "max-age=31536000, immutable")
     |> send_resp(200, binary)
   end
 end

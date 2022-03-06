@@ -4,7 +4,19 @@ defmodule CuteFemBot.Schema.Suggestion do
   alias CuteFemBot.Schema.Suggestion, as: Self
 
   @primary_key false
-  @derive {Jason.Encoder, only: [:file_id, :file_type, :suggestor_id, :decision, :published]}
+  @derive {
+    Jason.Encoder,
+    only: [
+      :file_id,
+      :file_type,
+      :suggestor_id,
+      :decision,
+      :published,
+      :inserted_at,
+      :updated_at,
+      :file_mime_type
+    ]
+  }
   schema "suggestions" do
     field(:file_id, :string, primary_key: true)
 
@@ -17,6 +29,8 @@ defmodule CuteFemBot.Schema.Suggestion do
     field(:decision, :string, default: nil)
     field(:decision_msg_id, :id, default: nil)
     field(:published, :boolean, default: false)
+
+    timestamps(type: :utc_datetime)
   end
 
   def from_core(%CuteFemBot.Core.Suggestion{} = data) do

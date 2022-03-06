@@ -1,7 +1,7 @@
 export * from './types'
 
 import { mande } from 'mande'
-import { SchemaSuggestion, SchemaUser } from './types'
+import { SchemaSuggestion, SchemaSuggestionDecision, SchemaUser } from './types'
 
 let auth: string | null = null
 
@@ -35,6 +35,10 @@ export interface FetchFileResponse {
   contentType: string | null
 }
 
+export interface UpdateSuggestionParams {
+  decision?: SchemaSuggestionDecision
+}
+
 export async function fetchFile(fileId: string): Promise<FetchFileResponse> {
   return filesIndex
     .get(`/${fileId}`, {
@@ -44,11 +48,13 @@ export async function fetchFile(fileId: string): Promise<FetchFileResponse> {
       responseAs: 'response',
     })
     .then(async (x) => {
-      console.log(x)
-
       const blob = await x.blob()
       const contentType = x.headers.get('Content-Type')
 
       return { blob, contentType }
     })
+}
+
+export async function updateSuggestion(fileId: string, params: UpdateSuggestionParams): Promise<void> {
+  await suggestionsIndex.put(`/${fileId}`, params)
 }

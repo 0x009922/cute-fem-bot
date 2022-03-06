@@ -1,6 +1,8 @@
 lockfileVersion: 5.3
 
 specifiers:
+  '@iconify/json': ^2.1.8
+  '@types/luxon': ^2.0.9
   '@typescript-eslint/eslint-plugin': ^5.12.1
   '@typescript-eslint/parser': ^5.12.1
   '@unocss/reset': ^0.26.4
@@ -9,6 +11,7 @@ specifiers:
   eslint: ^7
   eslint-config-alloy: ^4.5.1
   eslint-plugin-vue: ^8.5.0
+  luxon: ^2.3.1
   mande: ^1.0.1
   naive-ui: ^2.25.5
   pinia: ^2.0.11
@@ -17,6 +20,7 @@ specifiers:
   typescript: ^4.5.4
   unocss: ^0.26.4
   unplugin-auto-import: ^0.6.1
+  unplugin-icons: ^0.13.2
   vite: ^2.8.0
   vue: ^3.2.25
   vue-router: ^4.0.12
@@ -24,6 +28,7 @@ specifiers:
 
 dependencies:
   '@vueuse/core': 7.7.0_vue@3.2.31
+  luxon: 2.3.1
   mande: 1.0.1
   naive-ui: 2.25.5_vue@3.2.31
   pinia: 2.0.11_typescript@4.5.5+vue@3.2.31
@@ -31,6 +36,8 @@ dependencies:
   vue-router: 4.0.12_vue@3.2.31
 
 devDependencies:
+  '@iconify/json': 2.1.8
+  '@types/luxon': 2.0.9
   '@typescript-eslint/eslint-plugin': 5.12.1_78ba2542c270c83b2a80bb1c125195b6
   '@typescript-eslint/parser': 5.12.1_eslint@7.32.0+typescript@4.5.5
   '@unocss/reset': 0.26.4
@@ -43,6 +50,7 @@ devDependencies:
   typescript: 4.5.5
   unocss: 0.26.4_sass@1.49.9
   unplugin-auto-import: 0.6.1_@vueuse+core@7.7.0+vite@2.8.4
+  unplugin-icons: 0.13.2_vite@2.8.4
   vite: 2.8.4_sass@1.49.9
   vue-tsc: 0.32.0_typescript@4.5.5
 
@@ -166,6 +174,13 @@ packages:
     resolution: {integrity: sha512-ZnQMnLV4e7hDlUvw8H+U8ASL02SS2Gn6+9Ac3wGGLIe7+je2AeAOxPY+izIPJDfFDb7eDjev0Us8MO1iFRN8hA==}
     dev: true
 
+  /@iconify/json/2.1.8:
+    resolution: {integrity: sha512-2IJXUbw9ZesptnctgcpHsRlmUqI3kg7XUWNA/FgwDv9Cj8lQMUxF3L0M52+eidpci9ChftYWoEtIYOBKUQUqow==}
+    dependencies:
+      '@iconify/types': 1.0.12
+      pathe: 0.0.2
+    dev: true
+
   /@iconify/types/1.0.12:
     resolution: {integrity: sha512-6er6wSGF3hgc1JEZqiGpg21CTCjHBYOUwqLmb2Idzkjiw6ogalGP0ZMLVutCzah+0WB4yP+Zd2oVPN8jvJ+Ftg==}
     dev: true
@@ -246,6 +261,10 @@ packages:
   /@types/lodash/4.14.179:
     resolution: {integrity: sha512-uwc1x90yCKqGcIOAT6DwOSuxnrAbpkdPsUOZtwrXb4D/6wZs+6qG7QnIawDuZWg0sWpxl+ltIKCaLoMlna678w==}
     dev: false
+
+  /@types/luxon/2.0.9:
+    resolution: {integrity: sha512-ZuzIc7aN+i2ZDMWIiSmMdubR9EMMSTdEzF6R+FckP4p6xdnOYKqknTo/k+xXQvciSXlNGIwA4OPU5X7JIFzYdA==}
+    dev: true
 
   /@types/node/14.14.45:
     resolution: {integrity: sha512-DssMqTV9UnnoxDWu959sDLZzfvqCF0qDNRjaWeYSui9xkFe61kKo4l1TWNTQONpuXEm+gLMRvdlzvNHBamzmEw==}
@@ -1952,6 +1971,11 @@ packages:
       yallist: 4.0.0
     dev: true
 
+  /luxon/2.3.1:
+    resolution: {integrity: sha512-I8vnjOmhXsMSlNMZlMkSOvgrxKJl0uOsEzdGgGNZuZPaS9KlefpE9KV95QFftlJSC+1UyCC9/I69R02cz/zcCA==}
+    engines: {node: '>=12'}
+    dev: false
+
   /magic-string/0.25.7:
     resolution: {integrity: sha512-4CrMT5DOHTDk4HYDlzmwu4FVCcIYI8gauveasrdCu2IKIFOJ3f0v/8MDGJCDL9oD2ppz/Av1b0Nj345H9M+XIA==}
     dependencies:
@@ -2122,6 +2146,10 @@ packages:
   /path-type/4.0.0:
     resolution: {integrity: sha512-gDKb8aZMDeD/tZWs9P6+q0J9Mwkdl6xMV8TjnGP3qJVJ06bdMgkbBlLU8IdfOsIsFz2BW1rNVT3XuNEl8zPAvw==}
     engines: {node: '>=8'}
+    dev: true
+
+  /pathe/0.0.2:
+    resolution: {integrity: sha512-mmK20YtPb4yXHlaPuOD/uPIpRu7iIK45GA/GiRSlNpIdfWDG5aEQmFT1HHtBmJB+t/6DvFOtOsEipsPA8Bx2cw==}
     dev: true
 
   /pathe/0.2.0:
@@ -2636,6 +2664,38 @@ packages:
     transitivePeerDependencies:
       - esbuild
       - rollup
+      - vite
+      - webpack
+    dev: true
+
+  /unplugin-icons/0.13.2_vite@2.8.4:
+    resolution: {integrity: sha512-Dwfn5DkKrp/BpZV0R/2wgU39j+kjkeuIQ54PmJ9LhXNpNAS+Huf6Fl/PUmUrlWOvMAz0uPo3y/5lQKZUBjBkBQ==}
+    peerDependencies:
+      '@svgr/core': '>=5.5.0'
+      '@vue/compiler-sfc': ^3.0.2
+      vue-template-compiler: ^2.6.12
+      vue-template-es2015-compiler: ^1.9.0
+    peerDependenciesMeta:
+      '@svgr/core':
+        optional: true
+      '@vue/compiler-sfc':
+        optional: true
+      vue-template-compiler:
+        optional: true
+      vue-template-es2015-compiler:
+        optional: true
+    dependencies:
+      '@antfu/install-pkg': 0.1.0
+      '@antfu/utils': 0.5.0
+      '@iconify/utils': 1.0.23
+      debug: 4.3.3
+      kolorist: 1.5.1
+      local-pkg: 0.4.1
+      unplugin: 0.3.2_vite@2.8.4
+    transitivePeerDependencies:
+      - esbuild
+      - rollup
+      - supports-color
       - vite
       - webpack
     dev: true

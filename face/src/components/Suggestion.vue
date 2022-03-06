@@ -1,99 +1,83 @@
 <script setup lang="ts">
-import { SchemaSuggestion } from '../api'
 import { useFilesStore } from '../stores/files'
-import SuggestionPreviewImg from './SuggestionPreviewImg.vue'
-import SuggestionPreviewVideo from './SuggestionPreviewVideo.vue'
-import SuggestionTypeTag from './SuggestionTypeTag.vue'
+import SuggestionActions from './SuggestionActions.vue'
+import SuggestionPreview from './SuggestionPreview.vue'
+import FormatDate from './FormatDate.vue'
+import { usePreviewStore } from '../stores/preview'
+import { useSuggestionsStore } from '../stores/suggestions'
 
 interface Props {
-  data: SchemaSuggestion
-  num: number
+  fileId: string
 }
 
 const props = defineProps<Props>()
 
 const filesStore = useFilesStore()
+const suggestionsStore = useSuggestionsStore()
 
-const type = computed(() => props.data.file_type)
+const data = $computed(() => suggestionsStore.suggestionsMapped!.get(props.fileId)!)
 
 // File loading
 
-const file = computed(() => filesStore.loaded[props.data.file_id])
-
-const isFileLoaded = computed(() => !!file.value)
-
-const isLoading = ref(false)
+const file = $computed(() => filesStore.loaded[props.fileId])
+const isFileLoaded = $computed(() => !!file)
+let isLoading = $ref(false)
 
 async function load() {
   try {
-    isLoading.value = true
-    await filesStore.load(props.data.file_id)
+    isLoading = true
+    await filesStore.load(props.fileId)
   } finally {
-    isLoading.value = false
+    isLoading = false
   }
 }
 
-const typeDefinitely = computed<'photo' | 'video' | 'document'>(() => {
-  if (type.value === 'photo' || type.value === 'video') return type.value
+const typeDefinitely = $computed(() => suggestionsStore.suggestionTypes!.get(props.fileId)!)
 
-  const mime = file.value?.contentType
-  if (mime) {
-    if (mime.startsWith('image/')) return 'photo'
-    if (mime.startsWith('video/')) return 'video'
-  }
-
-  return 'document'
-})
+const isPreviewable = $computed(() => typeDefinitely !== 'document')
 
 // Loading on intersection
 
 const root = templateRef('root')
-
-const isVisible = ref(false)
+let isVisible = $ref(false)
 
 useIntersectionObserver(root, ([{ isIntersecting }]) => {
-  isVisible.value = isIntersecting
+  isVisible = isIntersecting
 })
 
 whenever(
-  () => !isFileLoaded.value && isVisible.value && !isLoading.value,
+  () => !isFileLoaded && isVisible && !isLoading && isPreviewable,
   () => load(),
   { immediate: true },
 )
+
+const previewStore = usePreviewStore()
+
+function openPreview() {
+  previewStore.open(props.fileId)
+}
 </script>
 
 <template>
   <div
     ref="root"
-    class="min-h-300px border border-gray-200 rounded p-4 relative"
+    class="min-h-100px shadow rounded relative overflow-hidden flex flex-col"
   >
-    <header class="p-2 flex items-center">
-      <div class="flex-1 text-xl">
-        #{{ num }}
-      </div>
+    <SuggestionPreview
+      class="flex-1"
+      :type="typeDefinitely"
+      :blob-src="file?.src"
+      @open-preview="openPreview()"
+    />
 
-      <SuggestionTypeTag :value="typeDefinitely" />
-    </header>
+    <div class="flex items-center p-4 text-sm">
+      <span class="text-sm flex-1"><slot name="user" /></span>
 
-    <button
-      v-if="!isFileLoaded"
-      @click="load"
-    >
-      Посмотреть
-    </button>
+      <span>
+        <FormatDate :iso="data.inserted_at" />
+      </span>
+    </div>
 
-    <template v-else>
-      <SuggestionPreviewImg
-        v-if="typeDefinitely === 'photo'"
-        :src="file!.src"
-      />
-
-      <SuggestionPreviewVideo
-        v-else-if="typeDefinitely === 'video'"
-        :src="file!.src"
-      />
-
-      <span v-else>Нема {{ typeDefinitely }}</span>
-    </template>
+    <SuggestionActions :data="data" />
   </div>
 </template>

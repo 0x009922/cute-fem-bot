@@ -5,19 +5,28 @@ import { useAuthStore } from '../stores/auth'
 const router = useRouter()
 const route = useRoute()
 
-// const isOnMain  = computed(() => route.path === '/')
-
-const routeKey = computed({
-  get: () => route.params.key,
+const routeKey = computed<string>({
+  get: () => route.params.key as string,
   set: (v) => router.replace({ params: { key: v } }),
 })
 
 const auth = useAuthStore()
-const key = computed({ get: () => auth.key, set: (v) => auth.$patch({ key: v }) })
-watch(key, setAuth)
+const storeKey = computed({
+  get: () => auth.key,
+  set: (key) => auth.$patch({ key }),
+})
 
-syncRef(routeKey, key)
-const keysAreSame = eagerComputed(() => key.value === routeKey.value)
+const key = ref('')
+const keyIsSynced = eagerComputed(() => key.value === routeKey.value)
+
+watch(
+  routeKey,
+  (val) => {
+    storeKey.value = key.value = val
+    setAuth(val)
+  },
+  { immediate: true },
+)
 
 function acceptKey() {
   routeKey.value = key.value
@@ -25,10 +34,6 @@ function acceptKey() {
 </script>
 
 <template>
-  <!-- <div v-if="!isOnMain">
-    <RouterLink to="" >
-  </div> -->
-
   <div>
     <label for="key"> Ключ: </label>
     <input
@@ -37,7 +42,7 @@ function acceptKey() {
     >
 
     <button
-      v-show="!keysAreSame"
+      v-show="!keyIsSynced"
       @click="acceptKey()"
     >
       Так точно

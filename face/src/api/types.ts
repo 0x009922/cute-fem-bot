@@ -16,9 +16,12 @@ export interface SchemaUserMeta {
 export interface SchemaSuggestion {
   file_id: string
   file_type: SchemaSuggestionType
+  file_mime_type: string
   published: boolean
   suggestor_id: number
   decision: SchemaSuggestionDecision
+  inserted_at: string
+  updated_at: string
 }
 
 export type SchemaSuggestionDecision = null | 'sfw' | 'nsfw'

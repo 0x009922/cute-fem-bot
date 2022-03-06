@@ -1,21 +1,27 @@
 <script setup lang="ts">
-import { SchemaSuggestion } from '../api'
+import { useSuggestionsStore } from '../stores/suggestions'
 import Suggestion from './Suggestion.vue'
+import User from './User.vue'
 
-interface Props {
-  items: SchemaSuggestion[]
-}
-
-const props = defineProps<Props>()
+const suggestionsStore = useSuggestionsStore()
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div
+    v-if="suggestionsStore.state"
+    class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 py-4"
+  >
     <Suggestion
-      v-for="(item, i) in props.items"
+      v-for="item in suggestionsStore.state.suggestions"
       :key="item.file_id"
-      :data="item"
-      :num="i + 1"
-    />
+      :file-id="item.file_id"
+    >
+      <template
+        v-if="suggestionsStore.usersMap"
+        #user
+      >
+        <User :data="suggestionsStore.usersMap!.get(item.suggestor_id)!" />
+      </template>
+    </Suggestion>
   </div>
 </template>

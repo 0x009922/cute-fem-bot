@@ -8,6 +8,10 @@ module.exports = {
   globals: {
     defineProps: true,
     defineEmits: true,
+    $ref: true,
+    $: true,
+    $$: true,
+    $computed: true,
   },
   rules: {
     'vue/html-indent': ['error', 2],

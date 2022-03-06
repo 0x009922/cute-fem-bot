@@ -4,7 +4,7 @@ import SuggestionsList from './SuggestionsList.vue'
 
 const store = useSuggestionsStore()
 
-const { state, error, isReady } = toRefs(store)
+const { state, error } = toRefs(store)
 </script>
 
 <template>
@@ -14,9 +14,7 @@ const { state, error, isReady } = toRefs(store)
     Ошибка: {{ error }}
   </div>
 
-  <div v-if="isReady">
-    <!-- {{ state }} -->
-
-    <SuggestionsList :items="state!.suggestions" />
+  <div v-if="state">
+    <SuggestionsList :items="state.suggestions" />
   </div>
 </template>
