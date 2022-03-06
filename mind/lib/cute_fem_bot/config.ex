@@ -25,7 +25,8 @@ defmodule CuteFemBot.Config do
     field(:posting_chat, any(), enforce: true)
     field(:port, integer(), default: nil)
     field(:updates_approach, :long_polling | :webhook, default: :long_polling)
-    field(:long_polling_interval, pos_integer(), default: 1500)
+    field(:long_polling_interval, pos_integer(), default: 4000)
+    field(:public_path, String.t(), default: nil)
   end
 
   @doc """
@@ -59,7 +60,9 @@ defmodule CuteFemBot.Config do
           "long_polling" -> :long_polling
           "webhook" -> :webhook
         end,
-      long_polling_interval: Map.get(raw, "long_polling_interval", 1500) |> normalize_str_to_num()
+      long_polling_interval:
+        Map.get(raw, "long_polling_interval", 1500) |> normalize_str_to_num(),
+      public_path: Map.get(raw, "public_path")
     }
   end
 

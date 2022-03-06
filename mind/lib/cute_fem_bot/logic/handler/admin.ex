@@ -5,11 +5,11 @@ defmodule CuteFemBot.Logic.Handler.Admin do
 
   alias __MODULE__, as: Self
   alias Self.Shared
-  alias Self.Queue
   alias Self.Schedule
   alias Telegram.Types.Message
   alias CuteFemBot.Persistence
   alias CuteFemBot.Logic
+  alias CuteFemBot.Logic.Handler.Ctx
 
   require Logger
 
@@ -20,12 +20,11 @@ defmodule CuteFemBot.Logic.Handler.Admin do
       :handle_cmd_cancel,
       :handle_posting_mode_redir,
       :handle_cmd_schedule,
-      :handle_cmd_queue,
+      :handle_cmd_web,
       :handle_cmd_posting_mode,
       :handle_cmd_help,
       :handle_cmd_unban,
       :handle_cmd_dynamic_unban,
-      # {Queue, :handle},
       {Schedule, :handle},
       :skip
     ]
@@ -121,10 +120,15 @@ defmodule CuteFemBot.Logic.Handler.Admin do
     end
   end
 
-  @spec handle_cmd_queue(atom | %{:commands => any, optional(any) => any}) :: :cont | :halt
-  def handle_cmd_queue(ctx) do
-    halt_if_cmd(ctx, "queue", fn ->
-      Queue.command_queue(ctx)
+  def handle_cmd_web(ctx) do
+    halt_if_cmd(ctx, "web", fn ->
+      %{source: %{user: %{"id" => uid}}, config: %CuteFemBot.Config{} = cfg} = ctx
+
+      {:ok, key, _expires_at} = CuteFemBotWeb.Auth.create_key(Ctx.deps_web_auth(ctx), uid)
+
+      invite_path = (cfg.public_path || "") <> key
+
+      Shared.send_msg!(ctx, Message.with_text(invite_path))
     end)
   end
 

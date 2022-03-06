@@ -26,7 +26,7 @@ defmodule CuteFemBot.Logic.Tasks.SetCommands do
         [
           cmd("schedule", "Расписание - просмотр, установка"),
           cmd("posting_mode", "Режим постинга"),
-          cmd("queue", "[ИНФОРМАЦИЯ УДАЛЕНА]"),
+          cmd("web", "Получить ключ доступа"),
           cmd("unban", "Разбанить пользователей"),
           cmd("cancel", "Отмена текущей операции"),
           cmd("help", "Памятка по использованию")

@@ -144,7 +144,7 @@ defmodule CuteFemBotWeb.Bridge do
 
   @impl true
   def handle_call({:lookup_auth, key}, _, %{web_auth: auth} = state) do
-    result = CuteFemBot.Logic.WebAuth.lookup(auth, key)
+    result = CuteFemBotWeb.Auth.lookup(auth, key)
     {:reply, result, state}
   end
 

@@ -1,4 +1,4 @@
-defmodule CuteFemBot.Logic.WebAuth do
+defmodule CuteFemBotWeb.Auth do
   @moduledoc """
   Server that allocates access keys for admins to
   access to web

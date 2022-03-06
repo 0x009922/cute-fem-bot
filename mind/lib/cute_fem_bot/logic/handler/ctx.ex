@@ -6,6 +6,7 @@ defmodule CuteFemBot.Logic.Handler.Ctx do
   def deps_api(%{deps: %{api: api}}), do: api
   def deps_config(%{deps: %{config: x}}), do: x
   def deps_posting(%{deps: %{posting: x}}), do: x
+  def deps_web_auth(%{deps: %{web_auth: x}}), do: x
 
   def fetch_config(ctx) do
     Map.put(ctx, :config, CuteFemBot.Config.State.lookup!(deps_config(ctx)))

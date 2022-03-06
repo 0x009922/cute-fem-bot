@@ -2,16 +2,18 @@
 import { DateTime } from 'luxon'
 
 const props = defineProps<{
-  iso: string
+  iso: string | null
 }>()
 
-const dt = $computed(() => DateTime.fromISO(props.iso).setLocale('ru-RU'))
+const dt = $computed(() => props.iso && DateTime.fromISO(props.iso).setLocale('ru-RU'))
 
 const formatted = $computed(() => {
-  return dt.toLocaleString(DateTime.DATETIME_SHORT)
+  return dt && dt.toLocaleString(DateTime.DATETIME_SHORT)
 })
 </script>
 
 <template>
-  {{ formatted }}
+  <template v-if="formatted">
+    {{ formatted }}
+  </template>
 </template>

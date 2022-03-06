@@ -10,21 +10,17 @@ defmodule CuteFemBot.Logic.Handler do
 
   def start_link(opts) do
     gen_opts = Keyword.take(opts, [:name])
-    init_opts = Keyword.take(opts, [:api, :persistence, :config, :posting])
+    init_opts = Keyword.fetch!(opts, :deps)
 
     GenServer.start_link(__MODULE__, init_opts, gen_opts)
   end
 
   @impl true
-  def init(init_opts) do
+  def init(deps) do
     {
       :ok,
       %{
-        deps: %{
-          api: Keyword.fetch!(init_opts, :api),
-          config: Keyword.fetch!(init_opts, :config),
-          posting: Keyword.fetch!(init_opts, :posting)
-        }
+        deps: deps
       }
     }
   end

@@ -20,8 +20,8 @@ export interface SchemaSuggestion {
   published: boolean
   suggestor_id: number
   decision: SchemaSuggestionDecision
-  inserted_at: string
-  updated_at: string
+  inserted_at: string | null
+  updated_at: string | null
 }
 
 export type SchemaSuggestionDecision = null | 'sfw' | 'nsfw'

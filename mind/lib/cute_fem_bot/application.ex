@@ -25,12 +25,12 @@ defmodule CuteFemBot.Application do
 
     telegram = CuteFemBot.Telegram
     finch = CuteFemBot.Finch
-    web_auth = CuteFemBot.Logic.WebAuth
+    web_auth = CuteFemBotWeb.Auth
     bridge_cache = CuteFemBot.Server.Bridge.Cachex
 
     children = [
       CuteFemBot.Repo,
-      {CuteFemBot.Logic.WebAuth, name: web_auth},
+      {web_auth, name: web_auth},
       CuteFemBotWeb.Endpoint,
       {Cachex, name: bridge_cache, limit: 100},
       {
@@ -55,21 +55,23 @@ defmodule CuteFemBot.Application do
           finch: finch,
           token: cfg.api_token
         }
-      }
+      },
       # {
       #   CuteFemBot.Logic.Stats,
       #   deps: %{
       #     telegram: telegram,
       #     cfg: cfg_ref
       #   }
-      # },
-      # {
-      #   CuteFemBot.Logic.Handler,
-      #   name: CuteFemBot.Logic.Handler,
-      #   api: telegram,
-      #   config: cfg_ref,
-      #   posting: CuteFemBot.Logic.Posting
-      # },
+      {
+        CuteFemBot.Logic.Handler,
+        name: CuteFemBot.Logic.Handler,
+        deps: %{
+          api: telegram,
+          config: cfg_ref,
+          posting: CuteFemBot.Logic.Posting,
+          web_auth: web_auth
+        }
+      },
       # {
       #   CuteFemBot.Logic.Posting,
       #   name: CuteFemBot.Logic.Posting,
@@ -78,18 +80,18 @@ defmodule CuteFemBot.Application do
       #     config: cfg_ref
       #   }
       # },
-      # {
-      #   CuteFemBot.Logic.Tasks.SetCommands,
-      #   deps: %{
-      #     api: telegram,
-      #     config: cfg_ref
-      #   }
-      # },
-      # updater_spec(%{
-      #   api: telegram,
-      #   config: cfg_ref,
-      #   handler_fun: handle_update_fun
-      # })
+      {
+        CuteFemBot.Logic.Tasks.SetCommands,
+        deps: %{
+          api: telegram,
+          config: cfg_ref
+        }
+      },
+      updater_spec(%{
+        api: telegram,
+        config: cfg_ref,
+        handler_fun: handle_update_fun
+      })
     ]
 
     opts = [strategy: :one_for_one, name: CuteFemBot.Supervisor]
