@@ -2,7 +2,7 @@ FROM elixir:1.13
 
 WORKDIR /app
 
-# ENV PORT=3000
+ENV PORT=4000
 ENV MIX_ENV=prod
 
 RUN mix do local.hex --force, local.rebar --force
@@ -20,5 +20,6 @@ RUN mix release --path dist
 RUN mkdir data
 COPY docker_entry.sh ./
 
-# EXPOSE 3000
+EXPOSE 4000
+
 CMD [ "/bin/sh", "docker_entry.sh" ]
