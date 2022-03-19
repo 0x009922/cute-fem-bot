@@ -5,6 +5,8 @@ import { SchemaSuggestion, SchemaSuggestionDecision, SchemaUser } from './types'
 
 let auth: string | null = null
 
+const API_BASE: string = import.meta.env.VITE_API_URL ?? ''
+
 export function setAuth(value: string | null) {
   auth = value
 }
@@ -14,8 +16,8 @@ function authForce(): string {
   return auth
 }
 
-const suggestionsIndex = mande('/api/suggestions')
-const filesIndex = mande('/api/files')
+const suggestionsIndex = mande(API_BASE + '/suggestions')
+const filesIndex = mande(API_BASE + '/files')
 
 export interface FetchSuggestionsResponse {
   suggestions: SchemaSuggestion[]
