@@ -15,9 +15,8 @@ declare module '~icons/*' {
   export default component
 }
 
-
 interface ImportMetaEnv {
-  readonly VITE_API_URL: string
+  readonly VITE_API_URL?: string
 }
 
 // eslint-disable-next-line no-unused-vars

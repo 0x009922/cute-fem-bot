@@ -5,7 +5,7 @@ import { SchemaSuggestion, SchemaSuggestionDecision, SchemaUser } from './types'
 
 let auth: string | null = null
 
-const API_BASE: string = import.meta.env.VITE_API_URL ?? ''
+const API_BASE: string = (import.meta.env.VITE_API_URL ?? '') + '/api/v1'
 
 export function setAuth(value: string | null) {
   auth = value

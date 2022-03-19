@@ -4,9 +4,13 @@ defmodule CuteFemBotWeb.Router do
 
   pipeline :api do
     plug(:accepts, ["json"])
+    plug(CuteFemBotWeb.Plugs.Auth)
   end
 
-  scope "/api" do
+  # for health check
+  get("/", Controllers.Health, :index)
+
+  scope "/api/v1" do
     pipe_through(:api)
 
     get("/auth", Controllers.Auth, :show)

@@ -56,12 +56,13 @@ defmodule CuteFemBot.Application do
           token: cfg.api_token
         }
       },
-      # {
-      #   CuteFemBot.Logic.Stats,
-      #   deps: %{
-      #     telegram: telegram,
-      #     cfg: cfg_ref
-      #   }
+      {
+        CuteFemBot.Logic.Stats,
+        deps: %{
+          telegram: telegram,
+          cfg: cfg_ref
+        }
+      },
       {
         CuteFemBot.Logic.Handler,
         name: CuteFemBot.Logic.Handler,
@@ -72,14 +73,14 @@ defmodule CuteFemBot.Application do
           web_auth: web_auth
         }
       },
-      # {
-      #   CuteFemBot.Logic.Posting,
-      #   name: CuteFemBot.Logic.Posting,
-      #   deps: %{
-      #     api: telegram,
-      #     config: cfg_ref
-      #   }
-      # },
+      {
+        CuteFemBot.Logic.Posting,
+        name: CuteFemBot.Logic.Posting,
+        deps: %{
+          api: telegram,
+          config: cfg_ref
+        }
+      },
       {
         CuteFemBot.Logic.Tasks.SetCommands,
         deps: %{
