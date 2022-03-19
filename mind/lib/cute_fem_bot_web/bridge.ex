@@ -62,7 +62,7 @@ defmodule CuteFemBotWeb.Bridge do
     GenServer.call(__MODULE__, {:lookup_auth, key})
   end
 
-  def get_cors_data(key) do
+  def get_cors_data() do
     GenServer.call(__MODULE__, :get_cors)
   end
 
