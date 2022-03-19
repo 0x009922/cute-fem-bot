@@ -126,7 +126,7 @@ defmodule CuteFemBot.Logic.Handler.Admin do
 
       {:ok, key, _expires_at} = CuteFemBotWeb.Auth.create_key(Ctx.deps_web_auth(ctx), uid)
 
-      invite_path = (cfg.www_path || "") <> key
+      invite_path = (cfg.www_path || "") <> "/" <> key
 
       Shared.send_msg!(ctx, Message.with_text(invite_path))
     end)
