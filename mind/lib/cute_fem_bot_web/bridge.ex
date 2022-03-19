@@ -63,7 +63,7 @@ defmodule CuteFemBotWeb.Bridge do
   end
 
   def get_cors_data(key) do
-    GenServer.call((__MODULE__, :get_cors))
+    GenServer.call(__MODULE__, :get_cors)
   end
 
   defp find_suggestion(file_id) do
