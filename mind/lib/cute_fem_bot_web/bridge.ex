@@ -62,6 +62,10 @@ defmodule CuteFemBotWeb.Bridge do
     GenServer.call(__MODULE__, {:lookup_auth, key})
   end
 
+  def get_cors_data(key) do
+    GenServer.call((__MODULE__, :get_cors))
+  end
+
   defp find_suggestion(file_id) do
     case Repo.one(from(s in Schema.Suggestion, where: s.file_id == ^file_id)) do
       nil -> {:error, "Suggestion not found"}
@@ -146,6 +150,13 @@ defmodule CuteFemBotWeb.Bridge do
   def handle_call({:lookup_auth, key}, _, %{web_auth: auth} = state) do
     result = CuteFemBotWeb.Auth.lookup(auth, key)
     {:reply, result, state}
+  end
+
+  @impl true
+  def handle_call(:get_cors, _, %{config: cfg} = state) do
+    %CuteFemBot.Config{www_path: www} = CuteFemBot.Config.State.lookup!(cfg)
+
+    {:reply, %{www: www}, state}
   end
 
   defp try_find_mime_type(file_id) do
