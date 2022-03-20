@@ -40,6 +40,7 @@ defmodule CuteFemBotWeb.Endpoint do
 
   plug(Plug.MethodOverride)
   plug(Plug.Head)
+  plug(CuteFemBotWeb.Plugs.CORS)
   # plug(Plug.Session, @session_options)
   plug(CuteFemBotWeb.Router)
 end
