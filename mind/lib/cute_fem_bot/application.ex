@@ -87,12 +87,12 @@ defmodule CuteFemBot.Application do
           api: telegram,
           config: cfg_ref
         }
-      },
-      updater_spec(%{
-        api: telegram,
-        config: cfg_ref,
-        handler_fun: handle_update_fun
-      })
+      }
+      # updater_spec(%{
+      #   api: telegram,
+      #   config: cfg_ref,
+      #   handler_fun: handle_update_fun
+      # })
     ]
 
     opts = [strategy: :one_for_one, name: CuteFemBot.Supervisor]

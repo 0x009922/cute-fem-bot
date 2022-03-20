@@ -19,4 +19,6 @@ defmodule CuteFemBotWeb.Router do
 
     get("/files/:file_id", Controllers.File, :show)
   end
+
+  match(:*, "/*any", Controllers.NotFound, :show)
 end
