@@ -33,7 +33,8 @@ defmodule CuteFemBot.MixProject do
       {:ecto_sqlite3, "~> 0.7.3"},
       {:cachex, "~> 3.4"},
       {:elixir_uuid, "~> 1.2"},
-      {:phoenix, "~> 1.6.6"}
+      {:phoenix, "~> 1.6.6"},
+      {:cors_plug, "~> 3.0"}
     ]
   end
 

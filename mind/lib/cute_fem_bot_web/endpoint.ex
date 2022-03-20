@@ -1,6 +1,8 @@
 defmodule CuteFemBotWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :cute_fem_bot
 
+  @enable_cors Mix.env() == :prod
+
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
@@ -40,7 +42,11 @@ defmodule CuteFemBotWeb.Endpoint do
 
   plug(Plug.MethodOverride)
   plug(Plug.Head)
-  plug(CuteFemBotWeb.Plugs.CORS)
+
+  if @enable_cors do
+    plug(CORSPlug, origin: &CuteFemBotWeb.Bridge.get_cors_origins/0)
+  end
+
   # plug(Plug.Session, @session_options)
   plug(CuteFemBotWeb.Router)
 end

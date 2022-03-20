@@ -62,8 +62,9 @@ defmodule CuteFemBotWeb.Bridge do
     GenServer.call(__MODULE__, {:lookup_auth, key})
   end
 
-  def get_cors_data() do
-    GenServer.call(__MODULE__, :get_cors)
+  def get_cors_origins() do
+    %{www: www} = GenServer.call(__MODULE__, :get_cors)
+    [www]
   end
 
   defp find_suggestion(file_id) do
