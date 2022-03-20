@@ -16,7 +16,7 @@ defmodule CuteFemBotWeb.Plugs.CORS do
       end
 
     case conn do
-      %Plug.Conn{method: :options} -> send_resp(conn, 204, "")
+      %Plug.Conn{method: "OPTIONS"} -> send_resp(conn, 204, "")
       _ -> conn
     end
   end
