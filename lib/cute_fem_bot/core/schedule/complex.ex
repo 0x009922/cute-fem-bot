@@ -96,7 +96,7 @@ defmodule CuteFemBot.Core.Schedule.Complex do
             end
           end)
         end)
-        |> Enum.min_by(fn {time, _, _} -> time end)
+        |> Enum.min_by(fn {time, _, _} -> time end, DateTime)
 
       {:ok, time, flush, category}
     catch

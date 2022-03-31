@@ -89,4 +89,28 @@ defmodule CuteFemBotCoreScheduleComplexTest do
              {~N[2020-01-01 22:20:00], 1, :sfw}
            ]
   end
+
+  test "March 31 case" do
+    raw = """
+    sfw;3;0 12,16,20 * * *
+    nsfw;1;34 0-5 * * *
+    """
+
+    start = ~N[2021-03-31 05:34:01] |> DateTime.from_naive!("Europe/Moscow")
+
+    {:ok, sut} = Sut.from_raw(raw)
+
+    {entries, _} =
+      Enum.map_reduce(1..4, start, fn _, timestamp ->
+        {:ok, time, flush, category} = Sut.compute_next(sut, timestamp)
+        {{time |> DateTime.to_naive(), flush, category}, DateTime.add(time, 30, :second)}
+      end)
+
+    assert entries == [
+             {~N[2021-03-31 12:00:00], 3, :sfw},
+             {~N[2021-03-31 16:00:00], 3, :sfw},
+             {~N[2021-03-31 20:00:00], 3, :sfw},
+             {~N[2021-04-01 00:34:00], 1, :nsfw}
+           ]
+  end
 end
