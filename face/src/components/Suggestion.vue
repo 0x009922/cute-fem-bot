@@ -5,6 +5,7 @@ import SuggestionPreview from './SuggestionPreview.vue'
 import FormatDate from './FormatDate.vue'
 import { usePreviewStore } from '../stores/preview'
 import { useSuggestionsStore } from '../stores/suggestions'
+import { fetchFile } from '../api'
 
 interface Props {
   fileId: string
@@ -19,8 +20,11 @@ const data = $computed(() => suggestionsStore.suggestionsMapped!.get(props.fileI
 
 // File loading
 
-const file = $computed(() => filesStore.loaded[props.fileId])
-const isFileLoaded = $computed(() => !!file)
+const fileInStore = $computed(() => filesStore.loaded[props.fileId])
+const {} = useAsyncState(() => fileInStore ?? fetchFile(props.fileId), null)
+
+const isFileLoaded = $computed(() => !!fileInStore)
+// const isLoadError = $computed<boolean>(() => )
 let isLoading = $ref(false)
 
 async function load() {
@@ -66,7 +70,7 @@ function openPreview() {
     <SuggestionPreview
       class="flex-1"
       :type="typeDefinitely"
-      :blob-src="file?.src"
+      :blob-src="fileInStore?.src"
       @open-preview="openPreview()"
     />
 
