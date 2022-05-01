@@ -1,7 +1,7 @@
 defmodule CuteFemBotWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :cute_fem_bot
 
-  @enable_cors Mix.env() == :prod
+  @enable_cors true
 
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.

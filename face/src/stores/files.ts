@@ -1,16 +1,15 @@
 import { defineStore } from 'pinia'
-import { fetchFile } from '../api'
+
+export const FILE_IS_UNAVAILABLE = Symbol('File is unavailable')
 
 export const useFilesStore = defineStore('files', () => {
-  const loaded = reactive<Record<string, undefined | { contentType: string | null; src: string }>>({})
+  const loaded = reactive<
+    Record<string, undefined | typeof FILE_IS_UNAVAILABLE | { contentType: string | null; src: string }>
+  >({})
 
-  async function load(fileId: string) {
-    const { contentType, blob } = await fetchFile(fileId)
-
-    const src = URL.createObjectURL(blob)
-
-    loaded[fileId] = { src, contentType }
+  function setAsNotAvailable(fileId: string) {
+    loaded[fileId] = FILE_IS_UNAVAILABLE
   }
 
-  return { loaded, load }
+  return { loaded, setAsNotAvailable }
 })

@@ -1,11 +1,14 @@
 export * from './types'
 
-import { mande } from 'mande'
+import Axios from 'axios'
 import { SchemaSuggestion, SchemaSuggestionDecision, SchemaUser } from './types'
 
 let auth: string | null = null
 
 const API_BASE: string = (import.meta.env.VITE_API_URL ?? '') + '/api/v1'
+const axios = Axios.create({
+  baseURL: API_BASE,
+})
 
 export function setAuth(value: string | null) {
   auth = value
@@ -16,20 +19,27 @@ function authForce(): string {
   return auth
 }
 
-const suggestionsIndex = mande(API_BASE + '/suggestions')
-const filesIndex = mande(API_BASE + '/files')
-
 export interface FetchSuggestionsResponse {
   suggestions: SchemaSuggestion[]
   users: SchemaUser[]
 }
 
-export async function fetchSuggestions(): Promise<FetchSuggestionsResponse> {
-  return suggestionsIndex.get<FetchSuggestionsResponse>('/', {
-    headers: {
-      Authorization: authForce(),
-    },
-  })
+export interface FetchSuggestionsParams extends PaginationParams {}
+
+export interface PaginationParams {
+  page?: number
+  page_size?: number
+}
+
+export async function fetchSuggestions(params?: FetchSuggestionsParams): Promise<FetchSuggestionsResponse> {
+  return axios
+    .get<FetchSuggestionsResponse>('/suggestions', {
+      headers: {
+        Authorization: authForce(),
+      },
+      params,
+    })
+    .then((x) => x.data)
 }
 
 export interface FetchFileResponse {
@@ -41,22 +51,24 @@ export interface UpdateSuggestionParams {
   decision?: SchemaSuggestionDecision
 }
 
-export async function fetchFile(fileId: string): Promise<FetchFileResponse> {
-  return filesIndex
-    .get(`/${fileId}`, {
+export async function fetchFile(fileId: string): Promise<FetchFileResponse | null> {
+  return axios
+    .get(`/files/${fileId}`, {
       headers: {
         Authorization: authForce(),
       },
-      responseAs: 'response',
+      responseType: 'blob',
     })
-    .then(async (x) => {
-      const blob = await x.blob()
-      const contentType = x.headers.get('Content-Type')
+    .then((x) => {
+      if (x.status === 204) return null
+
+      const blob = x.data
+      const contentType = x.headers['content-type']
 
       return { blob, contentType }
     })
 }
 
 export async function updateSuggestion(fileId: string, params: UpdateSuggestionParams): Promise<void> {
-  await suggestionsIndex.put(`/${fileId}`, params)
+  await axios.put(`/suggestions/${fileId}`, params)
 }

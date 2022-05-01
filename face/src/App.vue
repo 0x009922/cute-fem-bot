@@ -3,8 +3,10 @@ import ThePreview from './components/ThePreview.vue'
 </script>
 
 <template>
-  <div class="container mx-auto px-8">
-    <h1>Cute Fem Bot Фейс</h1>
+  <div class="container mx-auto px-8 app">
+    <h1 class="text-4xl">
+      CuteFemBot - web
+    </h1>
 
     <RouterView />
 
@@ -12,8 +14,9 @@ import ThePreview from './components/ThePreview.vue'
   </div>
 </template>
 
-<style lang="scss">
-#app {
-  font-family: sans-serif;
+<style lang="scss" scoped>
+.app {
+  font-family: 'Roboto Slab', sans-serif;
+  max-width: 600px;
 }
 </style>

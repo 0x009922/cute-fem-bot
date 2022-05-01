@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useSuggestionsStore } from '../stores/suggestions'
 import SuggestionsList from './SuggestionsList.vue'
+import SuggestionsPageControl from './SuggestionsPageControl.vue'
 
 const store = useSuggestionsStore()
 
-const { state, error } = toRefs(store)
+const { state, error, isLoading } = toRefs(store)
 </script>
 
 <template>
@@ -15,6 +16,12 @@ const { state, error } = toRefs(store)
   </div>
 
   <div v-if="state">
-    <SuggestionsList :items="state.suggestions" />
+    <SuggestionsPageControl />
+
+    <div :class="{ 'pointer-events-none opacity-50': isLoading }">
+      <SuggestionsList />
+    </div>
+
+    <SuggestionsPageControl />
   </div>
 </template>

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { SchemaSuggestion, SchemaSuggestionDecision, updateSuggestion } from '../api'
 import { useSuggestionsStore } from '../stores/suggestions'
-import LoadingDots from './LoadingDots.vue'
 
 const props = defineProps<{
   data: SchemaSuggestion
@@ -28,14 +27,18 @@ let decision = $ref<SchemaSuggestionDecision>(props.data.decision)
 
 const changes = $computed<boolean>(() => decision !== props.data.decision)
 
+whenever($$(changes), submit)
+
 let applying = $ref(false)
 
 async function submit() {
+  if (applying) return
+
   try {
     applying = true
 
     await updateSuggestion(props.data.file_id, { decision })
-    suggestionsStore.execute()
+    await suggestionsStore.execute()
   } finally {
     applying = false
   }
@@ -45,7 +48,10 @@ async function submit() {
 <template>
   <div class="m-4">
     <label class="text-sm"> Решение о постинге: </label>
-    <select v-model="decision">
+    <select
+      v-model="decision"
+      :disabled="applying"
+    >
       <option
         v-for="opt in OPTIONS"
         :key="opt.value || 'none'"
@@ -54,14 +60,5 @@ async function submit() {
         {{ opt.label }}
       </option>
     </select>
-
-    <button
-      v-if="changes"
-      :disabled="applying"
-      class="float-right"
-      @click="submit"
-    >
-      Применить<LoadingDots v-if="applying" />
-    </button>
   </div>
 </template>

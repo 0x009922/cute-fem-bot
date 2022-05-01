@@ -6,17 +6,25 @@ import { useAuthStore } from './auth'
 export const useSuggestionsStore = defineStore('suggestions', () => {
   const auth = useAuthStore()
 
-  const { state, isReady, isLoading, execute, error } = useAsyncState(() => fetchSuggestions(), null, {
-    immediate: false,
-    shallow: true,
-    resetOnExecute: false,
-  })
+  const page = ref(1)
+
+  const { state, isReady, isLoading, execute, error } = useAsyncState(
+    () => fetchSuggestions({ page: page.value }),
+    null,
+    {
+      immediate: false,
+      shallow: true,
+      resetOnExecute: false,
+    },
+  )
 
   whenever(
     () => !state.value && auth.key,
     () => execute(),
     { immediate: true },
   )
+
+  debouncedWatch(page, () => execute(), { debounce: 300 })
 
   const suggestionsMapped = $computed(() => {
     const items = state.value?.suggestions
@@ -43,6 +51,7 @@ export const useSuggestionsStore = defineStore('suggestions', () => {
     isLoading,
     error,
     execute,
+    page,
 
     suggestionsMapped,
     usersList,

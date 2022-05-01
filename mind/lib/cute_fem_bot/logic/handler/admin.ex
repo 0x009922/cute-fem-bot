@@ -128,7 +128,28 @@ defmodule CuteFemBot.Logic.Handler.Admin do
 
       invite_path = (cfg.www_path || "") <> "/" <> key
 
-      Shared.send_msg!(ctx, Message.with_text(invite_path))
+      msg =
+        if invite_path =~ ~r{localhost} do
+          Message.with_text(invite_path)
+        else
+          Message.with_text("Жми кнопку")
+          |> Map.merge(%{
+            "reply_markup" => %{
+              "keyboard" => [
+                [
+                  %{
+                    "text" => "Открыть веб",
+                    "web_app" => %{
+                      "url" => invite_path
+                    }
+                  }
+                ]
+              ]
+            }
+          })
+        end
+
+      Shared.send_msg!(ctx, msg)
     end)
   end
 

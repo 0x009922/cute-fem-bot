@@ -9,7 +9,7 @@ const suggestionsStore = useSuggestionsStore()
 <template>
   <div
     v-if="suggestionsStore.state"
-    class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 py-4"
+    class="grid sm:grid-cols-2 gap-4 py-4"
   >
     <Suggestion
       v-for="item in suggestionsStore.state.suggestions"

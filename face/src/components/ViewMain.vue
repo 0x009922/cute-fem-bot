@@ -16,25 +16,25 @@ const storeKey = computed({
   set: (key) => auth.$patch({ key }),
 })
 
-const key = ref('')
-const keyIsSynced = eagerComputed(() => key.value === routeKey.value)
+// const key = ref('')
+// const keyIsSynced = eagerComputed(() => key.value === routeKey.value)
 
 watch(
   routeKey,
   (val) => {
-    storeKey.value = key.value = val
+    storeKey.value = val
     setAuth(val)
   },
   { immediate: true },
 )
 
-function acceptKey() {
-  routeKey.value = key.value
-}
+// function acceptKey() {
+//   routeKey.value = key.value
+// }
 </script>
 
 <template>
-  <div>
+  <!-- <div>
     <label for="key"> Ключ: </label>
     <input
       id="key"
@@ -47,7 +47,21 @@ function acceptKey() {
     >
       Так точно
     </button>
-  </div>
+  </div> -->
 
-  <router-view />
+  <RouterView v-if="storeKey" />
+  <template v-else>
+    <h2>Ошибка</h2>
+    <p>
+      Чтобы пользоваться вебом, нужно сюда зайти с ключом. Ключ не вижу. Просто так ключ не достать. Видимо, что-то
+      пошло не так. <br><br>
+      Сообщи хозяину моему, пожалуйста.
+    </p>
+  </template>
 </template>
+
+<style lang="scss" scoped>
+input {
+  width: 300px;
+}
+</style>

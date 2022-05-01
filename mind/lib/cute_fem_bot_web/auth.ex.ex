@@ -39,6 +39,8 @@ defmodule CuteFemBotWeb.Auth do
       "Key for user #{user_id} is created. Time to live: #{ttl}s, or until #{expires_at}"
     )
 
+    Logger.debug("The exact key is: #{key}")
+
     schedule_expiration(user_id, ttl)
 
     {:reply, {:ok, key, expires_at}, keys}

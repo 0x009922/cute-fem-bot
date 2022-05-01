@@ -27,6 +27,6 @@ const username = computed<string | null>(() => meta.value.username ?? null)
       },
     ]"
   >
-    {{ displayName }} <code v-if="username">@{{ username }}</code>
+    {{ displayName }} <span v-if="username">@{{ username }}</span>
   </span>
 </template>

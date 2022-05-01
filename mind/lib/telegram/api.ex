@@ -47,7 +47,7 @@ defmodule Telegram.Api do
 
       {:error, :telegram, description} ->
         Logger.error("Telegram error response: #{inspect(description)}; #{request_data.()}")
-        :error
+        {:error, :telegram, description}
 
       {:error, :telegram_unknown, response} ->
         Logger.error("Telegram confusing response: #{inspect(response)}; #{request_data.()}")
@@ -115,7 +115,7 @@ defmodule Telegram.Api do
   def request!(api, opts) do
     case request(api, opts) do
       {:ok, response} -> response
-      :error -> raise "request! failed"
+      _ -> raise "request! failed"
     end
   end
 
@@ -136,7 +136,7 @@ defmodule Telegram.Api do
   def delete_message!(api, chat_id, message_id) do
     case delete_message(api, chat_id, message_id) do
       {:ok, _} -> :ok
-      :error -> raise "delete_message! failed"
+      _ -> raise "delete_message! failed"
     end
   end
 

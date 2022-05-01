@@ -17,14 +17,19 @@ defmodule CuteFemBotWeb.Bridge do
   end
 
   def index_suggestions(params \\ []) do
+    page_size = 10
+
     only_with_decision? = Keyword.get(params, :only_with_decision, false)
+    pagination = Keyword.fetch!(params, :pagination)
 
     query =
       from(s in Schema.Suggestion,
         join: u in Schema.User,
         on: s.suggestor_id == u.id,
-        select: {s, u}
+        select: {s, u},
+        order_by: [desc: s.inserted_at]
       )
+      |> CuteFemBot.Core.Pagination.Params.apply_to_ecto_query(pagination)
 
     query =
       if only_with_decision? do
@@ -38,6 +43,7 @@ defmodule CuteFemBotWeb.Bridge do
       |> Enum.unzip()
 
     %{
+      pagination: pagination,
       suggestions: suggestions,
       users:
         Stream.uniq_by(users, fn %{id: id} -> id end)
@@ -120,31 +126,7 @@ defmodule CuteFemBotWeb.Bridge do
           cache: cache
         } = state
       ) do
-    %{"file_path" => path} =
-      Api.request!(tg, method_name: "getFile", body: %{"file_id" => file_id})
-
-    %CuteFemBot.Config{api_token: token} = CuteFemBot.Config.State.lookup!(cfg)
-    url = Telegram.Util.href_file(token, path)
-
-    resp = load_file_with_caching(cache, finch, url)
-
-    content_type =
-      case try_find_mime_type(file_id) do
-        nil ->
-          [single] =
-            resp.headers
-            |> Stream.filter(fn {name, _} -> name == "content-type" end)
-            |> Stream.map(fn {_, value} -> value end)
-            |> Stream.concat(["application/octet-stream"])
-            |> Enum.take(1)
-
-          single
-
-        x ->
-          x
-      end
-
-    {:reply, {content_type, resp.body}, state}
+    {:reply, get_file_reply(state, file_id), state}
   end
 
   @impl true
@@ -160,8 +142,116 @@ defmodule CuteFemBotWeb.Bridge do
     {:reply, %{www: www}, state}
   end
 
+  defp get_file_reply(
+         %{
+           telegram: tg,
+           config: cfg,
+           finch: finch,
+           cache: cache
+         } = state,
+         file_id
+       ) do
+    with {:ok, %Finch.Response{} = resp} <- try_get_file_response(state, file_id) do
+      content_type =
+        case try_find_mime_type(file_id) do
+          nil -> extract_content_type_header(resp)
+          x -> x
+        end
+
+      {:ok, content_type, resp.body}
+    else
+      {:error, :unavailable} = err -> err
+      x -> x
+    end
+  end
+
+  defp try_get_file_response(
+         %{
+           telegram: tg,
+           config: cfg,
+           finch: finch,
+           cache: cache
+         },
+         file_id
+       ) do
+    err_unavailable = fn -> {:error, :unavailable} end
+
+    case lookup_file_in_cache(cache, file_id) do
+      {:ok, :unavailable} ->
+        err_unavailable.()
+
+      {:ok, %Finch.Response{}} = x ->
+        x
+
+      :error ->
+        with {:ok, path} <- get_file_download_path_from_telegram(tg, file_id),
+             %CuteFemBot.Config{api_token: token} = CuteFemBot.Config.State.lookup!(cfg),
+             url = Telegram.Util.href_file(token, path),
+             {:ok, %Finch.Response{} = resp} <- download_file(finch, url) do
+          put_file_into_cache(cache, file_id, resp)
+          {:ok, resp}
+        else
+          {:error, :file_is_unavailable} ->
+            put_file_into_cache(cache, file_id, :unavailable)
+            err_unavailable.()
+
+          x ->
+            x
+        end
+    end
+  end
+
+  defp get_file_download_path_from_telegram(tg, file_id) do
+    just_some_err = fn -> {:error, "Failed to get file path from Telegram"} end
+
+    case Api.request(tg, method_name: "getFile", body: %{"file_id" => file_id}) do
+      {:ok, %{"file_path" => path}} ->
+        {:ok, path}
+
+      {:error, :telegram, description} ->
+        # maybe there is no reason to try?
+        if description =~ ~r{wrong file_id or the file is temporarily unavailable} do
+          {:error, :file_is_unavailable}
+        else
+          just_some_err.()
+        end
+
+      :error ->
+        just_some_err.()
+    end
+  end
+
+  defp download_file(finch, url) do
+    case Finch.build(:get, url) |> Finch.request(finch) do
+      {:ok, %Finch.Response{}} = x -> x
+      {:error, _} -> {:error, "Failed to download file"}
+    end
+  end
+
   defp try_find_mime_type(file_id) do
     Repo.one(from(s in Schema.Suggestion, where: s.file_id == ^file_id, select: s.file_mime_type))
+  end
+
+  defp lookup_file_in_cache(cache, file_id) do
+    case Cachex.get!(cache, {:file, file_id}) do
+      nil -> :error
+      data -> {:ok, data}
+    end
+  end
+
+  defp extract_content_type_header(%Finch.Response{} = resp) do
+    [single] =
+      resp.headers
+      |> Stream.filter(fn {name, _} -> name == "content-type" end)
+      |> Stream.map(fn {_, value} -> value end)
+      |> Stream.concat(["application/octet-stream"])
+      |> Enum.take(1)
+
+    single
+  end
+
+  defp put_file_into_cache(cache, file_id, data) do
+    Cachex.put(cache, {:file, file_id}, data)
   end
 
   defp load_file_with_caching(cache, finch, url) do

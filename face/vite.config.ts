@@ -19,7 +19,12 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      '/api': 'http://localhost:4000',
+      // '/api/v1': {
+      //   target: 'https://api.cutefembot-landing.nyash.space',
+      //   secure: false,
+      //   rewrite: (path) => path.replace(/^\/api/, ''),
+      // },
+      '/api/v1': 'http://localhost:4000',
     },
   },
 })

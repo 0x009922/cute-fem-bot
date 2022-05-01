@@ -2,16 +2,25 @@ defmodule CuteFemBotWeb.Controllers.Suggestions do
   use CuteFemBotWeb, :controller
 
   def index(%Plug.Conn{} = conn, _) do
-    data =
-      CuteFemBotWeb.Bridge.index_suggestions(
-        only_with_decision:
+    case CuteFemBot.Core.Pagination.Params.from_raw_query(conn.query_params, 10) do
+      {:error, reason} ->
+        send_resp(conn, 400, "Bad query: #{reason}")
+
+      {:ok, pagination} ->
+        only_with_decision =
           case Map.get(conn.query_params, "queue", false) do
             "true" -> true
             _ -> false
           end
-      )
 
-    json(conn, data)
+        data =
+          CuteFemBotWeb.Bridge.index_suggestions(
+            only_with_decision: only_with_decision,
+            pagination: pagination
+          )
+
+        json(conn, data)
+    end
   end
 
   def update(%Plug.Conn{body_params: params} = conn, %{"file_id" => id}) do
