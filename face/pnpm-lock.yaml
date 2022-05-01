@@ -1,6 +1,7 @@
 lockfileVersion: 5.3
 
 specifiers:
+  '@grammyjs/web-app': ^0.0.1
   '@iconify/json': ^2.1.8
   '@types/luxon': ^2.0.9
   '@typescript-eslint/eslint-plugin': ^5.12.1
@@ -26,6 +27,7 @@ specifiers:
   vue-tsc: ^0.32.0
 
 dependencies:
+  '@grammyjs/web-app': 0.0.1
   '@vueuse/core': 7.7.0_vue@3.2.31
   axios: 0.27.2
   luxon: 2.3.1
@@ -136,6 +138,10 @@ packages:
     transitivePeerDependencies:
       - supports-color
     dev: true
+
+  /@grammyjs/web-app/0.0.1:
+    resolution: {integrity: sha512-RJtTUta1BG+q48MrvBNOkgMiGR8mrCKhPuQkXYCk1w9G1YyH4dLBUGlmTewjW66ZCW8m/bE/Ney8aC/u4vm9lw==}
+    dev: false
 
   /@humanwhocodes/config-array/0.5.0:
     resolution: {integrity: sha512-FagtKFz74XrTl7y6HCzQpwDfXP0yhxe9lHLD1UZxjvZIcbyRz8zTFF/yYNfSfzU414eDwZ1SrO0Qvtyf+wFMQg==}
