@@ -12,7 +12,7 @@ const suggestionsStore = useSuggestionsStore()
     class="grid sm:grid-cols-2 gap-4 py-4"
   >
     <Suggestion
-      v-for="item in suggestionsStore.state.suggestions"
+      v-for="item in suggestionsStore.state.suggestions.slice(0, 1)"
       :key="item.file_id"
       :file-id="item.file_id"
     >
