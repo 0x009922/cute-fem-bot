@@ -133,20 +133,16 @@ defmodule CuteFemBot.Logic.Handler.Admin do
           Message.with_text(invite_path)
         else
           Message.with_text("Жми кнопку")
-          |> Map.merge(%{
-            "reply_markup" => %{
-              "keyboard" => [
-                [
-                  %{
-                    "text" => "Открыть веб",
-                    "web_app" => %{
-                      "url" => invite_path
-                    }
-                  }
-                ]
-              ]
-            }
-          })
+          |> Message.set_reply_markup(:inline_keyboard_markup, [
+            [
+              %{
+                "text" => "Открыть веб",
+                "web_app" => %{
+                  "url" => invite_path
+                }
+              }
+            ]
+          ])
         end
 
       Shared.send_msg!(ctx, msg)
