@@ -24,9 +24,18 @@ defmodule Telegram.Types.Message do
     Map.put(msg, "parse_mode", mode)
   end
 
-  def set_reply_markup(msg, :inline_keyboard_markup, markup) do
+  def set_reply_markup(msg, type, markup, opts \\ [])
+
+  def set_reply_markup(msg, :inline_keyboard_markup, markup, opts) do
     Map.put(msg, "reply_markup", %{
       "inline_keyboard" => markup
+    })
+  end
+
+  def set_reply_markup(msg, :reply_keyboard_markup, markup, opts) do
+    Map.put(msg, "reply_markup", %{
+      "keyboard" => markup,
+      "one_time_keyboard" => Keyword.get(opts, :one_time, false)
     })
   end
 
