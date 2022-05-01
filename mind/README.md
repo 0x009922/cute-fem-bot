@@ -32,7 +32,7 @@ sudo docker build -t cute-fem-bot .
 sudo docker run \
     # В этом пути должен лежать config.yml и будет использоваться база main.db
     -v /path/to/data:/app/data \
-    # Чтобы таймзоны работали используются системные
+    # Чтобы таймзоны работали, используются системные
     -v /usr/share/zoneinfo:/usr/share/zoneinfo \
     -d cute-fem-bot
 ```

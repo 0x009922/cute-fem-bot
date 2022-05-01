@@ -4,7 +4,7 @@ defmodule CuteFemBotWeb.Router do
 
   pipeline :api do
     plug(:accepts, ["json"])
-    # plug(CuteFemBotWeb.Plugs.Auth)
+    plug(CuteFemBotWeb.Plugs.Auth)
   end
 
   # for health check
