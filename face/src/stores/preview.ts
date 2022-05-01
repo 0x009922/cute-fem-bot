@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { useFilesStore } from './files'
+import { useFilesStore, FILE_IS_UNAVAILABLE } from './files'
 import { useSuggestionsStore } from './suggestions'
 
 export const usePreviewStore = defineStore('preview', () => {
@@ -8,7 +8,11 @@ export const usePreviewStore = defineStore('preview', () => {
 
   let fileId = $ref<null | string>(null)
 
-  const file = $computed(() => (fileId && filesStore.loaded[fileId]) || null)
+  const file = $computed(() => {
+    const file = (fileId && filesStore.loaded[fileId]) || null
+    if (!file || file === FILE_IS_UNAVAILABLE) return null
+    return file
+  })
   const type = $computed(() => fileId && suggestionsStore.suggestionTypes?.get(fileId))
 
   function open(id: string) {
