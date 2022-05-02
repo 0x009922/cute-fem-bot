@@ -49,7 +49,7 @@ defmodule CuteFemBot.Logic.Handler.SuggestionsAdmin do
 
           edit_message_body =
             CuteFemBot.Logic.Handler.Util.construct_suggestion_final_edit_caption_message(%{
-              user: query_msg["from"],
+              user: ctx.source.user,
               suggestion_msg: query_msg,
               action: action
             })
