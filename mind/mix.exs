@@ -8,7 +8,8 @@ defmodule CuteFemBot.MixProject do
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      aliases: aliases()
+      aliases: aliases(),
+      preferred_cli_env: preferred_cli_env()
     ]
   end
 
@@ -40,7 +41,22 @@ defmodule CuteFemBot.MixProject do
 
   defp aliases() do
     [
-      test: ["ecto.drop", "ecto.create", "ecto.migrate --quiet", "test --no-start"]
+      test_integration: [
+        "ecto.drop",
+        "ecto.create",
+        "ecto.migrate --quiet",
+        "test --no-start --only integration"
+      ],
+      test_unit: [
+        "test --no-start"
+      ]
+    ]
+  end
+
+  defp preferred_cli_env() do
+    [
+      test_integration: :test,
+      test_unit: :test
     ]
   end
 end

@@ -1,5 +1,6 @@
 defmodule CuteFemBotLogicHandlerUtilTest do
   use ExUnit.Case
+  @moduletag :integration
 
   alias CuteFemBot.Persistence
   import CuteFemBot.Logic.Util

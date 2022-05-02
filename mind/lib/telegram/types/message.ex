@@ -1,6 +1,8 @@
 defmodule Telegram.Types.Message do
   def new() do
-    %{}
+    %{
+      "parse_mode" => "html"
+    }
   end
 
   def with_text(text) when is_binary(text) do
@@ -26,7 +28,7 @@ defmodule Telegram.Types.Message do
 
   def set_reply_markup(msg, type, markup, opts \\ [])
 
-  def set_reply_markup(msg, :inline_keyboard_markup, markup, opts) do
+  def set_reply_markup(msg, :inline_keyboard_markup, markup, _opts) do
     Map.put(msg, "reply_markup", %{
       "inline_keyboard" => markup
     })

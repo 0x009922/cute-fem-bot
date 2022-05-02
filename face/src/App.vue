@@ -3,7 +3,7 @@ import ThePreview from './components/ThePreview.vue'
 </script>
 
 <template>
-  <div class="container mx-auto app">
+  <div class="container mx-auto app p-4">
     <h1 class="text-4xl">
       CuteFemBot - web
     </h1>

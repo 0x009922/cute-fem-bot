@@ -14,7 +14,7 @@ defmodule CuteFemBot.Logic.Handler.SuggestionsAdmin do
     with {:callback_query,
           %{
             "id" => query_id,
-            "message" => %{"message_id" => query_msg_id},
+            "message" => %{"message_id" => query_msg_id} = query_msg,
             "data" => query_data
           }} <- ctx.update,
          {:ok, %Suggestion{} = suggestion} <-
@@ -22,38 +22,6 @@ defmodule CuteFemBot.Logic.Handler.SuggestionsAdmin do
       Api.answer_callback_query(Ctx.deps_api(ctx), query_id)
 
       query_parsed = CuteFemBot.Logic.Suggestions.suggestion_btn_data_to_key(query_data)
-
-      suggestion_callback_answer = fn action ->
-        actor_formatted = ctx_format_source_user(ctx)
-
-        action_text =
-          case action do
-            :approve_sfw -> "ня"
-            :approve_nsfw -> "NSFW-ня"
-            :reject -> "не ня"
-            :ban -> "бан"
-          end
-
-        text = "#{actor_formatted}: #{action_text}"
-
-        # send action result
-        Api.send_message(
-          Ctx.deps_api(ctx),
-          Message.with_text(text)
-          |> Message.set_reply_to(query_msg_id)
-          |> Message.set_chat_id(Ctx.cfg_get_suggestions_chat(ctx))
-          |> Message.set_parse_mode("html")
-        )
-
-        # delete reply markup
-        Api.request(Ctx.deps_api(ctx),
-          method_name: "editMessageReplyMarkup",
-          body: %{
-            "chat_id" => Ctx.cfg_get_suggestions_chat(ctx),
-            "message_id" => query_msg_id
-          }
-        )
-      end
 
       case query_parsed do
         :error ->
@@ -79,18 +47,35 @@ defmodule CuteFemBot.Logic.Handler.SuggestionsAdmin do
               Persistence.ban_user(user_id)
           end
 
-          suggestion_callback_answer.(action)
+          edit_message_body =
+            CuteFemBot.Logic.Handler.Util.construct_suggestion_final_edit_caption_message(%{
+              user: query_msg["from"],
+              suggestion_msg: query_msg,
+              action: action
+            })
+            |> Message.set_chat_id(Ctx.cfg_get_suggestions_chat(ctx))
+            |> Map.put("message_id", query_msg_id)
+
+          # send action result
+          Api.request(Ctx.deps_api(ctx),
+            method_name: "editMessageCaption",
+            body: edit_message_body
+          )
+
+          # delete reply markup
+          Api.request(Ctx.deps_api(ctx),
+            method_name: "editMessageReplyMarkup",
+            body: %{
+              "chat_id" => Ctx.cfg_get_suggestions_chat(ctx),
+              "message_id" => query_msg_id
+            }
+          )
       end
 
       :halt
     else
       _ -> :cont
     end
-  end
-
-  defp ctx_format_source_user(ctx) do
-    %{source: %{user: user}} = ctx
-    CuteFemBot.Util.format_user_name(user, :html)
   end
 
   defp find_suggestion_msg(msg_id) do

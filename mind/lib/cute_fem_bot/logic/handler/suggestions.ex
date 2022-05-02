@@ -134,70 +134,29 @@ defmodule CuteFemBot.Logic.Handler.Suggestions do
   defp ctx_get_lang(%{source: %{lang: x}}), do: x
 
   defp send_suggestion_to_admins!(ctx, %Suggestion{} = item) do
-    {caption, caption_entities} = admins_suggestions_msg_caption(ctx)
-
     %{method_name: method, body_part: media_body_part} = Suggestion.to_send(item)
 
-    btns =
-      [:approve_sfw, :approve_nsfw, :reject, :ban]
-      |> Enum.map(fn key ->
-        caption =
-          case key do
-            :approve_sfw -> "Ня (SFW)"
-            :approve_nsfw -> "Ня (NSFW)"
-            :reject -> "Не ня"
-            :ban -> "Бан"
-          end
+    {:message, msg} = ctx.update
+    user_caption = Map.get(msg, "caption", "")
+    user_caption_entities = Map.get(msg, "caption_entities", [])
 
-        inline_reply_btn(caption, Logic.Suggestions.suggestion_btn_key_to_data(key))
-      end)
-      |> Enum.chunk_every(2)
+    suggestion_message =
+      Logic.Handler.Util.construct_suggestion_message_part(%{
+        user: ctx.source.user,
+        user_caption: user_caption,
+        user_caption_entities: user_caption_entities
+      })
+      |> Message.set_chat_id(Ctx.cfg_get_suggestions_chat(ctx))
+      |> Map.merge(media_body_part)
 
     %{"message_id" => msg_id} =
       Api.request!(
         Ctx.deps_api(ctx),
         method_name: method,
-        body:
-          %{
-            "chat_id" => Ctx.cfg_get_suggestions_chat(ctx),
-            "caption" => caption,
-            "caption_entities" => caption_entities,
-            "parse_mode" => "html",
-            "reply_markup" => %{"inline_keyboard" => btns}
-          }
-          |> Map.merge(media_body_part)
+        body: suggestion_message
       )
 
     msg_id
-  end
-
-  defp admins_suggestions_msg_caption(ctx) do
-    # TODO forward user caption entities (i.e. formatting)
-
-    user_formatted = CuteFemBot.Util.format_user_name(ctx.source.user, :html)
-    caption_base = "Предложка от #{user_formatted}"
-
-    {:message, msg} = ctx.update
-    user_caption = Map.get(msg, "caption", "")
-
-    caption =
-      if String.length(user_caption) > 0 do
-        """
-        #{caption_base}
-
-        ---
-
-        #{user_caption}
-        """
-      else
-        caption_base
-      end
-
-    {caption, []}
-  end
-
-  defp inline_reply_btn(text, callback_data) do
-    %{"text" => text, "callback_data" => callback_data}
   end
 
   defp send_stick!(ctx, body) do

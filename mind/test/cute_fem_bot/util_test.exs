@@ -1,5 +1,5 @@
 defmodule CuteFemBotUtilTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   import CuteFemBot.Util
 
   describe "format_user_name" do
@@ -81,6 +81,52 @@ defmodule CuteFemBotUtilTest do
   describe "HTML escaping" do
     test "escapes" do
       assert escape_html("<h1>") == "&lt;h1&gt;"
+    end
+  end
+
+  describe "Message format concatenation" do
+    defp entity(offset, len, type) do
+      %{
+        "offset" => offset,
+        "len" => len,
+        "type" => type
+      }
+    end
+
+    test "all is empty" do
+      assert concat_msg_text_with_exiting_formatted("", [], "") == {"", []}
+    end
+
+    test "adding text after when no entities" do
+      assert concat_msg_text_with_exiting_formatted("Nya...", [], "\n...hey?") ==
+               {"Nya...\n...hey?", []}
+    end
+
+    test "adding text after with entities" do
+      assert concat_msg_text_with_exiting_formatted("Foo", [entity(0, 2, "bold")], " Bar") ==
+               {"Foo Bar", [entity(0, 2, "bold")]}
+    end
+
+    test "adding test before with entities" do
+      assert concat_msg_text_with_exiting_formatted(
+               "А что по форматированию?",
+               [
+                 %{"length" => 1, "offset" => 0, "type" => "strikethrough"},
+                 %{"length" => 3, "offset" => 2, "type" => "underline"},
+                 %{"length" => 2, "offset" => 6, "type" => "italic"},
+                 %{"length" => 14, "offset" => 9, "type" => "bold"}
+               ],
+               # 17 chars
+               "<b>А ничего</b>\n\n",
+               :before
+             ) ==
+               {"<b>А ничего</b>\n\nА что по форматированию?",
+                [
+                  %{"length" => 1, "offset" => 17, "type" => "strikethrough"},
+                  %{"length" => 3, "offset" => 19, "type" => "underline"},
+                  %{"length" => 2, "offset" => 23, "type" => "italic"},
+                  %{"length" => 14, "offset" => 26, "type" => "bold"}
+                ]}
     end
   end
 end

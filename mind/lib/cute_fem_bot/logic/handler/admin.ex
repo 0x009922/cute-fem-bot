@@ -132,7 +132,13 @@ defmodule CuteFemBot.Logic.Handler.Admin do
         if invite_path =~ ~r{localhost} do
           Message.with_text(invite_path)
         else
-          Message.with_text("Жми кнопку\n\nDebug-ключ: <code>#{key}</code>")
+          Message.with_text("""
+          Жми кнопку
+
+          Открыть вне телеги: <a href="#{invite_path}">линк</a>
+
+          Debug-ключ: <code>#{key}</code>
+          """)
           |> Message.set_parse_mode("html")
           |> Message.set_reply_markup(
             :reply_keyboard_markup,

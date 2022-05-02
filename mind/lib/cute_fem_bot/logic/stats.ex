@@ -27,9 +27,15 @@ defmodule CuteFemBot.Logic.Stats do
     end
 
     defp format_banned(%Self{banned_actions: data}) do
-      Map.to_list(data)
-      |> Enum.map(fn {id, count} -> "#{id}: #{count}" end)
-      |> Enum.join("\n")
+      case Map.to_list(data) do
+        [] ->
+          "Нет данных"
+
+        data ->
+          data
+          |> Enum.map(fn {id, count} -> "#{id}: #{count}" end)
+          |> Enum.join("\n")
+      end
     end
   end
 

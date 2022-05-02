@@ -86,4 +86,27 @@ defmodule CuteFemBot.Util do
 
   defp nil_or_trim(nil), do: ""
   defp nil_or_trim(x) when is_binary(x), do: String.trim(x)
+
+  def concat_msg_text(%{"text" => text, "entities" => entities}, add_text) do
+    %{
+      "entities" => entities,
+      "text" => text <> add_text
+    }
+  end
+
+  def concat_msg_text_with_exiting_formatted(src_text, src_entities, add, where \\ :after)
+      when where in [:after, :before] do
+    case where do
+      :after ->
+        {src_text <> add, src_entities}
+
+      :before ->
+        add_text_len = String.length(add)
+
+        entities_transformed =
+          Enum.map(src_entities, &Map.update!(&1, "offset", fn x -> x + add_text_len end))
+
+        {add <> src_text, entities_transformed}
+    end
+  end
 end

@@ -1,5 +1,6 @@
 defmodule CuteFemBotPersistenceTest do
   use ExUnit.Case
+  @moduletag :integration
 
   alias CuteFemBot.Persistence
   alias CuteFemBot.Core.Suggestion
