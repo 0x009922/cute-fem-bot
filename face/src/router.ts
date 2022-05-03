@@ -9,8 +9,9 @@ export default createRouter({
       component: () => import('./components/ViewMain.vue'),
       children: [
         {
-          path: '',
-          component: () => import('./components/ViewSuggestions.vue'),
+          name: 'suggestions',
+          path: 'suggestions',
+          component: () => import('./components/ViewSuggestions/index.vue'),
         },
       ],
     },

@@ -1,38 +1,44 @@
 import { defineStore } from 'pinia'
-import { fetchSuggestions, SchemaSuggestionType } from '../api'
+import { fetchSuggestions, FetchSuggestionsParams, FetchSuggestionsResponse, SchemaSuggestionType } from '../api'
 import { computeSuggestionType } from '../util'
 import { useAuthStore } from './auth'
+import { useSwr, wrapState } from '~/swr/lib'
+import { SetRequired } from 'type-fest'
+import { createAmnesiaStore } from '~/swr/amnesia-store'
 
 export const useSuggestionsStore = defineStore('suggestions', () => {
   const auth = useAuthStore()
 
-  const page = ref(1)
+  const params = reactive<SetRequired<FetchSuggestionsParams, 'page' | 'published' | 'decision'>>({
+    page: 1,
+    published: true,
+    decision: 'whatever',
+  })
 
-  const { state, isReady, isLoading, execute, error } = useAsyncState(
-    () => fetchSuggestions({ page: page.value }),
-    null,
-    {
-      immediate: false,
-      shallow: true,
-      resetOnExecute: false,
-    },
-  )
+  const swrStore = createAmnesiaStore<FetchSuggestionsResponse>()
+  const { state } = useSwr({
+    fetch: computed(() => {
+      if (!auth.key) return null
 
-  whenever(
-    () => !state.value && auth.key,
-    () => execute(),
-    { immediate: true },
-  )
-
-  debouncedWatch(page, () => execute(), { debounce: 300 })
+      return {
+        key: `${params.page}-${params.published}-${params.decision}`,
+        fn: () => fetchSuggestions(params),
+      }
+    }),
+    store: swrStore,
+  })
+  const { data, error, isPending } = wrapState(state)
+  function mutateViaReset() {
+    swrStore.reset()
+  }
 
   const suggestionsMapped = $computed(() => {
-    const items = state.value?.suggestions
+    const items = data.value?.val.suggestions
     if (!items) return null
     return new Map(items.map((x) => [x.file_id, x]))
   })
 
-  const usersList = computed(() => state.value?.users ?? null)
+  const usersList = computed(() => data.value?.val.users ?? null)
   const usersMap = computed(() => {
     const list = usersList.value
     if (!list) return null
@@ -40,18 +46,17 @@ export const useSuggestionsStore = defineStore('suggestions', () => {
   })
 
   const suggestionTypes = $computed<null | Map<string, SchemaSuggestionType>>(() => {
-    const items = state.value?.suggestions
+    const items = data.value?.val.suggestions
     if (!items) return null
     return new Map(items.map((x) => [x.file_id, computeSuggestionType(x.file_type, x.file_mime_type)]))
   })
 
   return $$({
-    state,
-    isReady,
-    isLoading,
+    params,
+    data,
+    isPending,
     error,
-    execute,
-    page,
+    mutate: mutateViaReset,
 
     suggestionsMapped,
     usersList,

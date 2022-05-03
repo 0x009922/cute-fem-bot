@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { SchemaSuggestion, SchemaSuggestionDecision, updateSuggestion } from '../api'
 import { useSuggestionsStore } from '../stores/suggestions'
+import SuggestionCardLine from './SuggestionCardLine.vue'
 
 const props = defineProps<{
   data: SchemaSuggestion
@@ -38,7 +39,7 @@ async function submit() {
     applying = true
 
     await updateSuggestion(props.data.file_id, { decision })
-    await suggestionsStore.execute()
+    suggestionsStore.mutate()
   } finally {
     applying = false
   }
@@ -46,19 +47,24 @@ async function submit() {
 </script>
 
 <template>
-  <div class="m-4">
-    <label class="text-sm"> Решение о постинге: </label>
-    <select
-      v-model="decision"
-      :disabled="applying"
-    >
-      <option
-        v-for="opt in OPTIONS"
-        :key="opt.value || 'none'"
-        :value="opt.value"
+  <SuggestionCardLine>
+    <template #title>
+      Решение о постинге
+    </template>
+    <template #content>
+      <select
+        v-model="decision"
+        class="mt-2"
+        :disabled="applying"
       >
-        {{ opt.label }}
-      </option>
-    </select>
-  </div>
+        <option
+          v-for="opt in OPTIONS"
+          :key="opt.value || 'none'"
+          :value="opt.value"
+        >
+          {{ opt.label }}
+        </option>
+      </select>
+    </template>
+  </SuggestionCardLine>
 </template>

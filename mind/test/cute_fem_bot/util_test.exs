@@ -129,4 +129,50 @@ defmodule CuteFemBotUtilTest do
                 ]}
     end
   end
+
+  describe "formatting changeset errors" do
+    alias Ecto.Changeset
+
+    def cast_factory(params) do
+      types = %{
+        age: :integer,
+        rules: :boolean,
+        gender: :string
+      }
+
+      {%{}, types}
+      |> Changeset.cast(params, Map.keys(types))
+      |> Changeset.validate_number(:age, greater_than_or_equal_to: 0)
+      |> Changeset.validate_inclusion(:gender, ["male", "female"])
+    end
+
+    test "empty changeset" do
+      assert format_changeset_errors(cast_factory(%{})) == %{}
+    end
+
+    test "with bad number" do
+      assert format_changeset_errors(cast_factory(%{"age" => "false"})) == %{
+               age: [%{msg: "is invalid", opts: %{type: :integer, validation: :cast}}]
+             }
+    end
+
+    test "with bad number range" do
+      assert format_changeset_errors(cast_factory(%{"age" => "-10"})) == %{
+               age: [
+                 %{
+                   msg: "must be greater than or equal to 0",
+                   opts: %{kind: :greater_than_or_equal_to, number: 0, validation: :number}
+                 }
+               ]
+             }
+    end
+
+    test "with bad gender" do
+      assert format_changeset_errors(cast_factory(%{"gender" => "helicopter"})) == %{
+               gender: [
+                 %{msg: "is invalid", opts: %{enum: ["male", "female"], validation: :inclusion}}
+               ]
+             }
+    end
+  end
 end

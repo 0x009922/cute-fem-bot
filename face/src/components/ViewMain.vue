@@ -16,9 +16,6 @@ const storeKey = computed({
   set: (key) => auth.$patch({ key }),
 })
 
-// const key = ref('')
-// const keyIsSynced = eagerComputed(() => key.value === routeKey.value)
-
 watch(
   routeKey,
   (val) => {
@@ -28,28 +25,18 @@ watch(
   { immediate: true },
 )
 
-// function acceptKey() {
-//   routeKey.value = key.value
-// }
+whenever(
+  () => route.name === 'main',
+  () => {
+    router.replace({ name: 'suggestions', params: route.params })
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
-  <!-- <div>
-    <label for="key"> Ключ: </label>
-    <input
-      id="key"
-      v-model="key"
-    >
-
-    <button
-      v-show="!keyIsSynced"
-      @click="acceptKey()"
-    >
-      Так точно
-    </button>
-  </div> -->
-
   <RouterView v-if="storeKey" />
+
   <template v-else>
     <h2>Ошибка</h2>
     <p>
@@ -59,9 +46,3 @@ watch(
     </p>
   </template>
 </template>
-
-<style lang="scss" scoped>
-input {
-  width: 300px;
-}
-</style>

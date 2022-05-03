@@ -22,5 +22,6 @@ module.exports = {
         markers: ['/'],
       },
     ],
+    'no-use-before-define': 'off',
   },
 }

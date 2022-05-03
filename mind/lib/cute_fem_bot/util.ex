@@ -109,4 +109,18 @@ defmodule CuteFemBot.Util do
         {add <> src_text, entities_transformed}
     end
   end
+
+  def format_changeset_errors(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn _changeset, _field, {msg, opts} ->
+      msg =
+        Regex.replace(~r"%{(\w+)}", msg, fn _, key ->
+          opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
+        end)
+
+      %{
+        msg: msg,
+        opts: Enum.into(opts, %{})
+      }
+    end)
+  end
 end

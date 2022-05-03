@@ -130,7 +130,12 @@ defmodule CuteFemBot.Logic.Handler.Admin do
 
       msg =
         if invite_path =~ ~r{localhost} do
-          Message.with_text(invite_path)
+          Message.with_text("""
+          [локалхост линк](#{invite_path})
+
+          `#{key}`
+          """)
+          |> Message.set_parse_mode("markdown")
         else
           Message.with_text("""
           Жми кнопку

@@ -1,5 +1,5 @@
 defmodule CuteFemBotCorePaginationParamsTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias CuteFemBot.Core.Pagination.Params, as: Sut
 
@@ -20,9 +20,7 @@ defmodule CuteFemBotCorePaginationParamsTest do
     end
 
     test "query with bad page" do
-      assert {:error, err} = parse(%{"page" => "yo"}, 1)
-      assert err =~ ~r{invalid page}
-      assert err =~ ~r{bad integer: yo}
+      assert {:error, _} = parse(%{"page" => "yo"}, 1)
     end
 
     test "query with page size" do
@@ -31,9 +29,7 @@ defmodule CuteFemBotCorePaginationParamsTest do
     end
 
     test "query with bad page size" do
-      assert {:error, err} = parse(%{"page_size" => "bad"}, 9)
-      assert err =~ ~r{invalid page size}
-      assert err =~ ~r{bad integer: bad}
+      assert {:error, _} = parse(%{"page_size" => "bad"}, 9)
     end
   end
 end

@@ -21,9 +21,9 @@ const username = computed<string | null>(() => meta.value.username ?? null)
 <template>
   <span
     :class="[
-      'p-1 rounded bg-green-100 text-green-600',
+      'text-green-600',
       {
-        'bg-red-100 text-red-600': data.banned,
+        'text-red-600': data.banned,
       },
     ]"
   >

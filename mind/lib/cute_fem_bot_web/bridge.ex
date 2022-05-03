@@ -2,6 +2,7 @@ defmodule CuteFemBotWeb.Bridge do
   alias CuteFemBot.Repo
   alias CuteFemBot.Schema
   alias Telegram.Api
+  alias CuteFemBotWeb.Bridge.IndexSuggestionsParams
   import Ecto.Query
   require Logger
   use GenServer
@@ -16,34 +17,26 @@ defmodule CuteFemBotWeb.Bridge do
     GenServer.call(__MODULE__, {:get_file, file_id}, 300_000)
   end
 
-  def index_suggestions(params \\ []) do
-    page_size = 10
-
-    only_with_decision? = Keyword.get(params, :only_with_decision, false)
-    pagination = Keyword.fetch!(params, :pagination)
-
+  def index_suggestions(%IndexSuggestionsParams{} = params) do
     query =
       from(s in Schema.Suggestion,
-        join: u in Schema.User,
-        on: s.suggestor_id == u.id,
-        select: {s, u},
         order_by: [desc: s.inserted_at]
       )
-      |> CuteFemBot.Core.Pagination.Params.apply_to_ecto_query(pagination)
+      |> IndexSuggestionsParams.apply_to_query(params)
 
     query =
-      if only_with_decision? do
-        from(s in query, where: not is_nil(s.decision))
-      else
-        query
-      end
+      from(s in query,
+        join: u in Schema.User,
+        on: s.suggestor_id == u.id,
+        select: {s, u}
+      )
 
     {suggestions, users} =
       Repo.all(query)
       |> Enum.unzip()
 
     %{
-      pagination: pagination,
+      pagination: params.pagination,
       suggestions: suggestions,
       users:
         Stream.uniq_by(users, fn %{id: id} -> id end)
@@ -116,16 +109,7 @@ defmodule CuteFemBotWeb.Bridge do
   end
 
   @impl true
-  def handle_call(
-        {:get_file, file_id},
-        _,
-        %{
-          telegram: tg,
-          config: cfg,
-          finch: finch,
-          cache: cache
-        } = state
-      ) do
+  def handle_call({:get_file, file_id}, _, state) do
     {:reply, get_file_reply(state, file_id), state}
   end
 
@@ -142,19 +126,11 @@ defmodule CuteFemBotWeb.Bridge do
     {:reply, %{www: www}, state}
   end
 
-  defp get_file_reply(
-         %{
-           telegram: tg,
-           config: cfg,
-           finch: finch,
-           cache: cache
-         } = state,
-         file_id
-       ) do
+  defp get_file_reply(state, file_id) do
     with {:ok, %Finch.Response{} = resp} <- try_get_file_response(state, file_id) do
       content_type =
         case try_find_mime_type(file_id) do
-          nil -> extract_content_type_header(resp)
+          nil -> CuteFemBotWeb.Bridge.Util.extract_content_type_header(resp)
           x -> x
         end
 
@@ -239,31 +215,7 @@ defmodule CuteFemBotWeb.Bridge do
     end
   end
 
-  defp extract_content_type_header(%Finch.Response{} = resp) do
-    [single] =
-      resp.headers
-      |> Stream.filter(fn {name, _} -> name == "content-type" end)
-      |> Stream.map(fn {_, value} -> value end)
-      |> Stream.concat(["application/octet-stream"])
-      |> Enum.take(1)
-
-    single
-  end
-
   defp put_file_into_cache(cache, file_id, data) do
     Cachex.put(cache, {:file, file_id}, data)
-  end
-
-  defp load_file_with_caching(cache, finch, url) do
-    case Cachex.get!(cache, {:file, url}) do
-      nil ->
-        {:ok, %Finch.Response{} = resp} = Finch.build(:get, url) |> Finch.request(finch)
-        Logger.debug("Putting data to cache")
-        Cachex.put(cache, {:file, url}, resp)
-        resp
-
-      %Finch.Response{} = resp ->
-        resp
-    end
   end
 end

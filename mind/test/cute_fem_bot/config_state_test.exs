@@ -1,5 +1,5 @@
 defmodule CuteFemBotConfigStateTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   defp cfg_factory() do
     %CuteFemBot.Config{

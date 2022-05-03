@@ -24,7 +24,14 @@ export interface FetchSuggestionsResponse {
   users: SchemaUser[]
 }
 
-export interface FetchSuggestionsParams extends PaginationParams {}
+export interface FetchSuggestionsParams extends PaginationParams {
+  published?: boolean
+  decision?: SuggestionDecisionParam
+}
+
+export const SUGGESTION_DECISION_PARAM_VALUES = ['sfw', 'nsfw', 'none', 'whatever'] as const
+
+export type SuggestionDecisionParam = typeof SUGGESTION_DECISION_PARAM_VALUES[number]
 
 export interface PaginationParams {
   page?: number

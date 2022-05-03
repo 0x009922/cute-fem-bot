@@ -1,5 +1,5 @@
 defmodule ContextFallTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias CtxHandler.State
 

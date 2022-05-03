@@ -1,5 +1,5 @@
 defmodule CuteFemBotCoreScheduleComplexTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias CuteFemBot.Core.Schedule.Complex, as: Sut
 

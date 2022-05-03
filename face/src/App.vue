@@ -4,8 +4,8 @@ import ThePreview from './components/ThePreview.vue'
 
 <template>
   <div class="container mx-auto app p-4">
-    <h1 class="text-4xl">
-      CuteFemBot - web
+    <h1 class="text-4xl m-0">
+      CuteFemBot Web
     </h1>
 
     <RouterView />

@@ -7,6 +7,7 @@ import { usePreviewStore } from '../stores/preview'
 import { useSuggestionsStore } from '../stores/suggestions'
 import { fetchFile } from '../api'
 import Spinner from './Spinner.vue'
+import SuggestionCardLine from './SuggestionCardLine.vue'
 
 interface Props {
   fileId: string
@@ -96,13 +97,41 @@ function openPreview() {
     />
 
     <div class="grid gap-4 p-4 text-sm">
-      <span class="text-sm"><slot name="user" /></span>
+      <SuggestionCardLine>
+        <template #title>
+          Юзер
+        </template>
+        <template #content>
+          <slot name="user" />
+        </template>
+      </SuggestionCardLine>
 
-      <span>
+      <SuggestionCardLine>
+        <template #title>
+          Опубликовано?
+        </template>
+        <template #content>
+          {{ data.published ? 'Да' : 'Нет' }}
+        </template>
+      </SuggestionCardLine>
+
+      <SuggestionActions :data="data" />
+
+      <span class="text-xs">
         <FormatDate :iso="data.inserted_at" />
+        <template v-if="data.updated_at"> / <FormatDate :iso="data.updated_at" /> </template>
       </span>
     </div>
-
-    <SuggestionActions :data="data" />
   </div>
 </template>
+
+<style lang="scss" scoped>
+.tags-list {
+  & > span {
+    border-radius: 99px;
+    padding: 0 4px;
+    margin: 4px;
+    // border: 1px solid black;
+  }
+}
+</style>

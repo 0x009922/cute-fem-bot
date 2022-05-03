@@ -4,6 +4,7 @@ defmodule CuteFemBotWeb.Controllers.NotFound do
 
   def show(conn, _) do
     conn
-    |> send_resp(404, "Not found т_т")
+    |> put_status(404)
+    |> text("Not found т_т")
   end
 end
