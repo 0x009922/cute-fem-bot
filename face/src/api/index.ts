@@ -3,20 +3,18 @@ export * from './types'
 import Axios from 'axios'
 import { SchemaSuggestion, SchemaSuggestionDecision, SchemaUser } from './types'
 
-let auth: string | null = null
-
 const API_BASE: string = (import.meta.env.VITE_API_URL ?? '') + '/api/v1'
 const axios = Axios.create({
   baseURL: API_BASE,
 })
 
+const AUTH_HEADER = 'Authorization'
 export function setAuth(value: string | null) {
-  auth = value
-}
-
-function authForce(): string {
-  if (!auth) throw new Error('No auth')
-  return auth
+  if (value) {
+    axios.defaults.headers.common[AUTH_HEADER] = value
+  } else {
+    delete axios.defaults.headers.common[AUTH_HEADER]
+  }
 }
 
 export interface FetchSuggestionsResponse {
@@ -41,9 +39,6 @@ export interface PaginationParams {
 export async function fetchSuggestions(params?: FetchSuggestionsParams): Promise<FetchSuggestionsResponse> {
   return axios
     .get<FetchSuggestionsResponse>('/suggestions', {
-      headers: {
-        Authorization: authForce(),
-      },
       params,
     })
     .then((x) => x.data)
@@ -61,9 +56,6 @@ export interface UpdateSuggestionParams {
 export async function fetchFile(fileId: string): Promise<FetchFileResponse | null> {
   return axios
     .get(`/files/${fileId}`, {
-      headers: {
-        Authorization: authForce(),
-      },
       responseType: 'blob',
     })
     .then((x) => {

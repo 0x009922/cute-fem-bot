@@ -16,7 +16,11 @@ export const useSuggestionsStore = defineStore('suggestions', () => {
   })
 
   const swrStore = createAmnesiaStore<FetchSuggestionsResponse>()
-  const { state } = useSwr({
+  const {
+    state,
+    mutate,
+    key: swrKey,
+  } = useSwr({
     fetch: computed(() => {
       if (!auth.key) return null
 
@@ -28,8 +32,15 @@ export const useSuggestionsStore = defineStore('suggestions', () => {
     store: swrStore,
   })
   const { data, error, isPending } = wrapState(state)
-  function mutateViaReset() {
-    swrStore.reset()
+  function mutateAndResetAllOther() {
+    const key = swrKey.value
+    if (!key) throw new Error('No current key')
+
+    const currentState = swrStore.get(key.val)
+    swrStore.storage.value = {}
+    swrStore.set(key.val, currentState)
+
+    mutate()
   }
 
   const suggestionsMapped = $computed(() => {
@@ -56,7 +67,7 @@ export const useSuggestionsStore = defineStore('suggestions', () => {
     data,
     isPending,
     error,
-    mutate: mutateViaReset,
+    mutate: mutateAndResetAllOther,
 
     suggestionsMapped,
     usersList,

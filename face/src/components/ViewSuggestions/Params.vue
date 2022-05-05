@@ -13,9 +13,15 @@ function decisionRu(value: SuggestionDecisionParam) {
 
 <template>
   <div class="rounded border-2 border-indigo-600 p-4 space-y-4">
-    <h3 class="m-0">
-      Параметры
-    </h3>
+    <div class="flex items-center">
+      <h3 class="m-0 flex-1">
+        Параметры
+      </h3>
+
+      <button @click="suggestionsStore.mutate()">
+        Обновить
+      </button>
+    </div>
     <div class="grid gap-2 grid-cols-2">
       <div class="grid gap-2">
         <div class="">

@@ -24,7 +24,9 @@ defmodule CuteFemBotWeb.Plugs.Auth do
 
     case data do
       :error ->
-        send_resp(conn, 401, "Bad authorization")
+        conn
+        |> send_resp(401, "Bad authorization")
+        |> halt()
 
       {:ok, data} ->
         assign(conn, :auth, data)

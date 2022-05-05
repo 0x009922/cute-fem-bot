@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useSuggestionsStore } from '~/stores/suggestions'
 import SuggestionsList from './SuggestionsList.vue'
-import SuggestionsPageControl from './SuggestionsPageControl.vue'
 import { useRouteQuery } from '@vueuse/router'
 import { SuggestionDecisionParam as Decision, SUGGESTION_DECISION_PARAM_VALUES } from '~/api'
 import Params from './Params.vue'
@@ -9,7 +8,7 @@ import Spinner from '../Spinner.vue'
 
 const store = useSuggestionsStore()
 
-const { data, error, isPending } = toRefs(store)
+const { error, isPending } = toRefs(store)
 
 let storePage = $computed({
   get: () => store.params.page,
@@ -77,12 +76,15 @@ syncRef($$(storePublished), $$(routePublishedFiltered))
     <Spinner v-if="isPending" />
   </h2>
 
-  <div v-if="error">
-    Ошибка: {{ error.val }}
-  </div>
-
-  <div>
+  <div class="space-y-4">
     <Params />
+
+    <div
+      v-if="error"
+      class="border-2 border-red-500 rounded p-4"
+    >
+      Ошибка: {{ error.val }}
+    </div>
 
     <div>
       <SuggestionsList />

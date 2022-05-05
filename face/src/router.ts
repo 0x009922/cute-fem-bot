@@ -11,7 +11,7 @@ export default createRouter({
         {
           name: 'suggestions',
           path: 'suggestions',
-          component: () => import('./components/ViewSuggestions/index.vue'),
+          component: () => import('./components/ViewSuggestions/ViewSuggestions.vue'),
         },
       ],
     },
