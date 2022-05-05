@@ -99,15 +99,6 @@ function openPreview() {
     <div class="grid gap-4 p-4 text-sm">
       <SuggestionCardLine>
         <template #title>
-          Юзер
-        </template>
-        <template #content>
-          <slot name="user" />
-        </template>
-      </SuggestionCardLine>
-
-      <SuggestionCardLine>
-        <template #title>
           Опубликовано?
         </template>
         <template #content>
@@ -116,6 +107,15 @@ function openPreview() {
       </SuggestionCardLine>
 
       <SuggestionActions :data="data" />
+
+      <SuggestionCardLine>
+        <template #title>
+          Юзер
+        </template>
+        <template #content>
+          <slot name="user" />
+        </template>
+      </SuggestionCardLine>
 
       <span class="text-xs">
         <FormatDate :iso="data.inserted_at" />
