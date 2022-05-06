@@ -32,6 +32,11 @@ whenever(
   },
   { immediate: true },
 )
+
+const authKeyFromInput = $ref('')
+function acceptAuthKey() {
+  routeKey.value = authKeyFromInput
+}
 </script>
 
 <template>
@@ -44,5 +49,21 @@ whenever(
       пошло не так. <br><br>
       Сообщи хозяину моему, пожалуйста.
     </p>
+
+    <hr>
+
+    <p>Или... у тебя есть ключ?</p>
+
+    <div class="flex items-center space-x-4">
+      <label for="auth-key">Ключ:</label>
+      <input
+        id="auth-key"
+        v-model="authKeyFromInput"
+        class="flex-1"
+      >
+      <button @click="acceptAuthKey">
+        OK
+      </button>
+    </div>
   </template>
 </template>

@@ -37,7 +37,14 @@ defmodule Telegram.Types.Message do
   def set_reply_markup(msg, :reply_keyboard_markup, markup, opts) do
     Map.put(msg, "reply_markup", %{
       "keyboard" => markup,
-      "one_time_keyboard" => Keyword.get(opts, :one_time, false)
+      "one_time_keyboard" => Keyword.get(opts, :one_time, false),
+      "resize_keyboard" => Keyword.get(opts, :resize, false)
+    })
+  end
+
+  def remove_reply_keyboard(msg) do
+    Map.put(msg, "reply_markup", %{
+      "remove_keyboard" => true
     })
   end
 

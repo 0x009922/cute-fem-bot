@@ -157,7 +157,8 @@ defmodule CuteFemBot.Logic.Handler.Admin do
                 }
               ]
             ],
-            one_time: true
+            one_time: true,
+            resize: true
           )
         end
 

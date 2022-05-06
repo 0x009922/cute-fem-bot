@@ -52,6 +52,7 @@ defmodule CuteFemBot.Logic.Handler.Admin.Shared do
       Message.with_text(
         if is_there_any?, do: "ОК, отменил", else: "ОК, отменил (а было ли что?..)"
       )
+      |> Message.remove_reply_keyboard()
     )
   end
 
