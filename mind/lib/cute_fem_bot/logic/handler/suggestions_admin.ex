@@ -4,7 +4,7 @@ defmodule CuteFemBot.Logic.Handler.SuggestionsAdmin do
   alias Telegram.Types.Message
   alias CuteFemBot.Logic.Handler
   alias Handler.Ctx
-  alias CuteFemBot.Core.Suggestion
+  alias CuteFemBot.Schema.Suggestion
 
   def main() do
     [:handle_suggestions_callbacks]
@@ -28,7 +28,7 @@ defmodule CuteFemBot.Logic.Handler.SuggestionsAdmin do
           nil
 
         {:ok, action} ->
-          %Suggestion{file_id: file_id, user_id: user_id} = suggestion
+          %Suggestion{file_id: file_id, made_by: user_id} = suggestion
 
           case action do
             x when x == :approve_sfw or x == :approve_nsfw ->

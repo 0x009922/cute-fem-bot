@@ -1,7 +1,7 @@
-defmodule CuteFemBotCoreSuggestionTest do
+defmodule CuteFemBotSchemaSuggestionTest do
   use ExUnit.Case, async: true
 
-  alias CuteFemBot.Core.Suggestion
+  alias CuteFemBot.Schema.Suggestion
 
   describe "extract_from_message()" do
     test "when there are multiple photo_size items, the biggest is extracted" do
@@ -28,7 +28,7 @@ defmodule CuteFemBotCoreSuggestionTest do
       }
 
       assert {:ok, item} = Suggestion.extract_from_message(message)
-      assert item.mime_type == "video/mpeg4"
+      assert item.file_mime_type == "video/mpeg4"
     end
 
     test "mime type is extracted from a video" do
@@ -41,7 +41,7 @@ defmodule CuteFemBotCoreSuggestionTest do
       }
 
       assert {:ok, item} = Suggestion.extract_from_message(message)
-      assert item.mime_type == "video/mp4"
+      assert item.file_mime_type == "video/mp4"
     end
   end
 end

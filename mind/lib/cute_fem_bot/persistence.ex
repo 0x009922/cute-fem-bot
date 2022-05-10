@@ -1,12 +1,9 @@
 defmodule CuteFemBot.Persistence do
-  alias CuteFemBot.Core.Suggestion
   alias CuteFemBot.Core.Schedule
-  alias CuteFemBot.Schema
   alias CuteFemBot.Repo
+  alias CuteFemBot.Schema
+  alias Schema.Suggestion
   import Ecto.Query
-
-  # defguard is_allowed_category(value) when Schedule.Complex.is_allowed_category(value)
-  defguard is_allowed_category(value) when value in [:sfw, :nsfw]
 
   defp term_to_binary(term) do
     :erlang.term_to_binary(term)
@@ -71,7 +68,7 @@ defmodule CuteFemBot.Persistence do
   end
 
   def add_new_suggestion(%Suggestion{} = data) do
-    Schema.Suggestion.from_core(data)
+    data
     |> Repo.insert!()
 
     :ok
@@ -81,18 +78,22 @@ defmodule CuteFemBot.Persistence do
         file_id,
         message_id
       ) do
-    Repo.one!(from(s in Schema.Suggestion, where: s.file_id == ^file_id))
-    |> Schema.Suggestion.bind_decision_msg_id(message_id)
+    Repo.one!(
+      from(s in Schema.Suggestion,
+        where: s.file_id == ^file_id
+      )
+    )
+    |> Schema.Suggestion.update_decision_message(message_id)
     |> Repo.update!()
 
     :ok
   end
 
-  @spec find_suggestion_by_moderation_msg(any) :: :not_found | {:ok, Suggestion.t()}
-  def find_suggestion_by_moderation_msg(msg_id) do
+  @spec find_suggestion_by_moderation_msg(any) :: :not_found | {:ok, Schema.Suggestion.t()}
+  def find_suggestion_by_moderation_msg(msg_id) when not is_nil(msg_id) do
     case Repo.one(from(s in Schema.Suggestion, where: s.decision_msg_id == ^msg_id)) do
       nil -> :not_found
-      item -> {:ok, Schema.Suggestion.to_core(item)}
+      item -> {:ok, item}
     end
   end
 
@@ -100,52 +101,45 @@ defmodule CuteFemBot.Persistence do
           :not_found | {:ok, Suggestion.t()}
   def find_existing_unapproved_suggestion_by_file_id(file_id) do
     case Repo.one(
-           from(s in Schema.Suggestion, where: s.file_id == ^file_id and is_nil(s.decision))
+           from(s in Schema.Suggestion,
+             where: s.file_id == ^file_id and is_nil(s.decision)
+           )
          ) do
       nil -> :not_found
-      item -> {:ok, Schema.Suggestion.to_core(item)}
+      item -> {:ok, item}
     end
   end
 
-  @spec approve_media(any(), :nsfw | :sfw) :: :not_found | :ok
-  def approve_media(file_id, category \\ :sfw)
-      when is_allowed_category(category) do
+  @spec make_decision(binary(), integer(), DateTime.t(), :nsfw | :sfw | :reject) ::
+          :not_found | :ok
+  def make_decision(file_id, made_by, made_at, decision) do
     case Repo.one(from(s in Schema.Suggestion, where: s.file_id == ^file_id)) do
       nil ->
         :not_found
 
       item ->
-        Schema.Suggestion.make_decision(item, Atom.to_string(category))
+        Schema.Suggestion.make_decision(item, decision, made_at, made_by)
         |> Repo.update!()
 
         :ok
     end
   end
 
-  @spec reject_media(any()) :: :ok
-  def reject_media(file_id) do
+  def cancel_decision(file_id) do
     Repo.one!(from(s in Schema.Suggestion, where: s.file_id == ^file_id))
-    |> Schema.Suggestion.make_decision("reject")
+    |> Schema.Suggestion.reset_decision()
     |> Repo.update!()
 
     :ok
   end
 
-  def get_approved_queue(category) when is_allowed_category(category) do
+  def get_approved_queue(category) when category in ~w(sfw nsfw)a do
     Repo.all(
       from(s in Schema.Suggestion,
-        where: s.decision == ^Atom.to_string(category) and not s.published
+        where: s.decision == ^category and not s.published,
+        order_by: [asc: s.decision_made_at]
       )
     )
-    |> Enum.map(&Schema.Suggestion.to_core/1)
-  end
-
-  def cancel_approved(file_id) do
-    Repo.one!(from(s in Schema.Suggestion, where: s.file_id == ^file_id))
-    |> Schema.Suggestion.clear_decision()
-    |> Repo.update!()
-
-    :ok
   end
 
   def check_as_published(files) when is_list(files) do
