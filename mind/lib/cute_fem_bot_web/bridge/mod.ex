@@ -184,7 +184,7 @@ defmodule CuteFemBotWeb.Bridge do
       {:ok, %{"file_path" => path}} ->
         {:ok, path}
 
-      {:error, :telegram, description} ->
+      {:error, {:telegram, description}} ->
         # maybe there is no reason to try?
         if description =~ ~r{wrong file_id or the file is temporarily unavailable} do
           {:error, :file_is_unavailable}
@@ -192,7 +192,7 @@ defmodule CuteFemBotWeb.Bridge do
           just_some_err.()
         end
 
-      :error ->
+      {:error, _} ->
         just_some_err.()
     end
   end
