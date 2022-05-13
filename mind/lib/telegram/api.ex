@@ -5,6 +5,15 @@ defmodule Telegram.Api do
 
   alias Telegram.Api.Config
 
+  @type request_result() :: {:ok, any()} | {:error, request_error()}
+  @type request_error() ::
+          telegram_defined_error()
+          | telegram_undefined_error()
+          | http_error()
+  @type telegram_defined_error() :: {:telegram, String.t()}
+  @type telegram_undefined_error() :: {:telegram_confusing_body, any()}
+  @type http_error() :: {:http, Exception.t()}
+
   def start_link(opts) do
     {name, opts} = Keyword.pop!(opts, :name)
     {%Config{} = cfg, _} = Keyword.pop!(opts, :config)
@@ -28,6 +37,7 @@ defmodule Telegram.Api do
     {:noreply, cfg}
   end
 
+  @spec make_request(Config.t(), Keyword.t()) :: request_result()
   defp make_request(%Config{finch: finch, token: token}, opts) do
     method_name = Keyword.fetch!(opts, :method_name)
     body = Keyword.get(opts, :body, nil)
@@ -38,20 +48,21 @@ defmodule Telegram.Api do
       {:ok, _} = ok ->
         ok
 
-      {:error, :http, err} ->
-        Logger.error(
-          "HTTP Error while making request to Telegram: #{inspect(err)}; #{request_data.()}"
-        )
+      {:error, kind} = source_err ->
+        case kind do
+          {:http, err} ->
+            Logger.error(
+              "HTTP Error while making request to Telegram: #{inspect(err)}; #{request_data.()}"
+            )
 
-        :error
+          {:telegram, description} ->
+            Logger.error("Telegram error response: #{inspect(description)}; #{request_data.()}")
 
-      {:error, :telegram, description} ->
-        Logger.error("Telegram error response: #{inspect(description)}; #{request_data.()}")
-        {:error, :telegram, description}
+          {:telegram_confusing_body, response} ->
+            Logger.error("Telegram confusing response: #{inspect(response)}; #{request_data.()}")
+        end
 
-      {:error, :telegram_unknown, response} ->
-        Logger.error("Telegram confusing response: #{inspect(response)}; #{request_data.()}")
-        :error
+        source_err
     end
   end
 
@@ -59,6 +70,8 @@ defmodule Telegram.Api do
   defp prepare_body(str) when is_binary(str), do: str
   defp prepare_body(body), do: Jason.encode!(body)
 
+  @spec do_request_with_retries(Finch.Request.t(), String.t(), String.t(), any()) ::
+          request_result()
   defp do_request_with_retries(finch, token, method_name, request_body) do
     request_body = prepare_body(request_body)
 
@@ -73,7 +86,7 @@ defmodule Telegram.Api do
          )
          |> Finch.request(finch) do
       {:error, err} ->
-        {:error, :http, err}
+        {:error, {:http, err}}
 
       {:ok, %Finch.Response{body: response_body}} ->
         case Jason.decode!(response_body) do
@@ -91,27 +104,30 @@ defmodule Telegram.Api do
             "description" => desc,
             "parameters" => %{"migrate_to_chat_id" => migrate}
           } ->
-            {:error, :telegram, "(#{migrate}) #{desc}"}
+            {:error, {:telegram, "(#{migrate}) #{desc}"}}
 
           %{"ok" => false, "description" => desc} ->
-            {:error, :telegram, desc}
+            {:error, {:telegram, "#{desc}"}}
 
           unknown_body ->
-            {:error, :telegram_unknown, unknown_body}
+            {:error, {:telegram_confusing_body, unknown_body}}
         end
     end
   end
 
   # client api
 
+  @spec request(any(), Keyword.t()) :: request_result()
   def request(api, opts) do
     GenServer.call(api, {:make_request, opts}, 60_000)
   end
 
+  @spec request_cast(any(), Keyword.t()) :: :ok
   def request_cast(api, opts) do
     GenServer.cast(api, {:make_request, opts})
   end
 
+  @spec request!(any(), Keyword.t()) :: any()
   def request!(api, opts) do
     case request(api, opts) do
       {:ok, response} -> response
@@ -119,10 +135,12 @@ defmodule Telegram.Api do
     end
   end
 
+  @spec send_message(any(), any()) :: request_result()
   def send_message(api, body) do
     request(api, method_name: "sendMessage", body: body)
   end
 
+  @spec delete_message(any(), pos_integer(), pos_integer()) :: request_result()
   def delete_message(api, chat_id, message_id) do
     request(api,
       method_name: "deleteMessage",
@@ -133,6 +151,7 @@ defmodule Telegram.Api do
     )
   end
 
+  @spec delete_message!(any(), pos_integer(), pos_integer()) :: :ok
   def delete_message!(api, chat_id, message_id) do
     case delete_message(api, chat_id, message_id) do
       {:ok, _} -> :ok
@@ -140,6 +159,7 @@ defmodule Telegram.Api do
     end
   end
 
+  @spec answer_callback_query(any(), any(), any()) :: request_result()
   def answer_callback_query(api, query_id, _opts \\ []) do
     request(
       api,
