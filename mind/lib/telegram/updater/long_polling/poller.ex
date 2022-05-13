@@ -32,7 +32,7 @@ defmodule Telegram.Updater.LongPolling.Poller do
             state
           end
 
-        :error ->
+        {:error, _} ->
           Logger.warning("Polling failed with an error")
           state
       end
