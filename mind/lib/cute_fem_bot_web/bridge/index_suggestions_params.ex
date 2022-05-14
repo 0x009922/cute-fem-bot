@@ -8,11 +8,13 @@ defmodule CuteFemBotWeb.Bridge.IndexSuggestionsParams do
     field(:published, bool() | :whatever, default: :whatever)
     field(:decision, :sfw | :nsfw | nil | :whatever, default: :whatever)
     field(:pagination, PaginationParams.t(), enforce: true)
+    field(:order_by_decision_date, :asc | :desc, default: nil)
   end
 
   @changeset_types %{
     published: :boolean,
-    decision: :string
+    decision: {:parameterized, Ecto.Enum, Ecto.Enum.init(values: ~w(none whatever sfw nsfw)a)},
+    order_by_decision_date: {:parameterized, Ecto.Enum, Ecto.Enum.init(values: ~w(asc desc)a)}
   }
 
   def from_raw_query(query) do
@@ -20,13 +22,9 @@ defmodule CuteFemBotWeb.Bridge.IndexSuggestionsParams do
       changeset =
         {%Self{pagination: pagination}, @changeset_types}
         |> Changeset.cast(query, Map.keys(@changeset_types))
-        |> Changeset.validate_inclusion(:decision, ["sfw", "nsfw", "none", "whatever"])
         |> Changeset.update_change(:decision, fn x ->
           case x do
-            "none" -> nil
-            "whatever" -> :whatever
-            "sfw" -> :sfw
-            "nsfw" -> :nsfw
+            :none -> nil
             _ -> x
           end
         end)
@@ -44,6 +42,7 @@ defmodule CuteFemBotWeb.Bridge.IndexSuggestionsParams do
     |> PaginationParams.apply_to_ecto_query(self.pagination)
     |> query_apply_decision(self)
     |> query_apply_published(self)
+    |> query_apply_order(self)
   end
 
   defp query_apply_decision(query, %Self{decision: :whatever}), do: query
@@ -67,5 +66,13 @@ defmodule CuteFemBotWeb.Bridge.IndexSuggestionsParams do
     import Ecto.Query
 
     from(s in query, where: s.published == ^value)
+  end
+
+  defp query_apply_order(query, %Self{order_by_decision_date: nil}), do: query
+
+  defp query_apply_order(query, %Self{order_by_decision_date: direction}) do
+    import Ecto.Query
+
+    from(s in query, order_by: [{^direction, s.decision_made_at}])
   end
 end

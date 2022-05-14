@@ -43,5 +43,21 @@ defmodule CuteFemBotWebBridgeSuggestionsParamsTest do
     test "decision=<invalid>" do
       assert {:error, _} = Params.from_raw_query(%{"decision" => "51235"})
     end
+
+    test "order=<valid>" do
+      ~w(asc desc)a
+      |> Enum.each(fn value ->
+        assert {:ok, %Params{order_by_decision_date: ^value}} =
+                 Params.from_raw_query(%{"order_by_decision_date" => value |> Atom.to_string()})
+      end)
+    end
+
+    test "order=<invalid>" do
+      assert {:error, _} = Params.from_raw_query(%{"order_by_decision_date" => "hheeee"})
+    end
+
+    test "order is not set" do
+      assert {:ok, %Params{order_by_decision_date: nil}} = Params.from_raw_query(%{})
+    end
   end
 end
