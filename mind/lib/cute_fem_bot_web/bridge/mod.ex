@@ -50,10 +50,21 @@ defmodule CuteFemBotWeb.Bridge do
     }
   end
 
-  def update_suggestion(file_id, params) do
-    with {:ok, %Schema.Suggestion{} = item} <- find_suggestion(file_id),
-         {:ok, _} <- update_suggestion_with_formatting(item, params) do
-      :ok
+  @spec make_suggestion_decision(binary(), :sfw | :nsfw | :reject, pos_integer()) ::
+          :ok | {:error, any()}
+  def make_suggestion_decision(file_id, decision, made_by) do
+    case CuteFemBot.Persistence.make_decision(file_id, made_by, DateTime.utc_now(), decision) do
+      :ok ->
+        :ok
+
+      {:error, kind} ->
+        msg =
+          case kind do
+            :not_found -> "Suggestion not found"
+            :published -> "Suggestion is already published"
+          end
+
+        {:error, msg}
     end
   end
 
@@ -64,34 +75,6 @@ defmodule CuteFemBotWeb.Bridge do
   def get_cors_origins() do
     %{www: www} = GenServer.call(__MODULE__, :get_cors)
     [www]
-  end
-
-  defp find_suggestion(file_id) do
-    case Repo.one(from(s in Schema.Suggestion, where: s.file_id == ^file_id)) do
-      nil -> {:error, "Suggestion not found"}
-      x -> {:ok, x}
-    end
-  end
-
-  defp update_suggestion_with_formatting(item, params) do
-    case item |> Schema.Suggestion.changeset_web(params) |> Repo.update() do
-      {:ok, _} = x -> x
-      {:error, changeset} -> {:error, format_changeset_errors(changeset)}
-    end
-  end
-
-  defp format_changeset_errors(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-      Regex.replace(~r"%{(\w+)}", msg, fn _, key ->
-        opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
-      end)
-    end)
-    |> Map.to_list()
-    |> Stream.map(fn {key, errors} ->
-      errors = Enum.join(errors, "; ")
-      "#{key}: #{errors}"
-    end)
-    |> Enum.join("; ")
   end
 
   # Server callbacks

@@ -147,6 +147,20 @@ defmodule CuteFemBotPersistenceTest do
     assert Persistence.get_approved_queue(:sfw) == []
   end
 
+  test "when making decision after post was published, error is returned" do
+    Persistence.add_new_suggestion(Suggestion.new(:photo, "nya", 9919))
+    Persistence.make_decision("nya", 12, ~U[2020-10-10 00:00:00Z], :sfw)
+    Persistence.check_as_published(["nya"])
+
+    assert Persistence.make_decision("nya", 41, ~U[2020-10-10 00:00:00Z], :nsfw) ==
+             {:error, :published}
+  end
+
+  test "when making decision for unexisting post, error is returned" do
+    assert Persistence.make_decision("nya", 12, ~U[2020-10-10 00:00:00Z], :sfw) ==
+             {:error, :not_found}
+  end
+
   describe "Working with schedule" do
     test "When it is not set, nil is returned" do
       assert Persistence.get_schedule() == nil

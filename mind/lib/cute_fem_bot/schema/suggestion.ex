@@ -134,28 +134,7 @@ defmodule CuteFemBot.Schema.Suggestion do
     |> change(decision_msg_id: id)
   end
 
-  # def make_decision(%Self{} = self, decision) when decision in ["sfw", "nsfw", "reject"] do
-  #   self
-  #   |> change(%{decision: decision, decision_msg_id: nil})
-  # end
-
-  # def clear_decision(%Self{} = self) do
-  #   self
-  #   |> change(%{decision: nil})
-  # end
-
-  # def bind_decision_msg_id(self, id) do
-  #   self
-  #   |> change(decision_msg_id: id)
-  # end
-
   def published(self) do
     self |> change(published: true)
-  end
-
-  def changeset_web(%Self{} = self, params) do
-    self
-    |> cast(params, [:decision])
-    |> validate_inclusion(:decision, [nil | ~w(sfw nsfw reject)])
   end
 end

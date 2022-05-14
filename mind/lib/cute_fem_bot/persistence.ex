@@ -111,11 +111,14 @@ defmodule CuteFemBot.Persistence do
   end
 
   @spec make_decision(binary(), integer(), DateTime.t(), :nsfw | :sfw | :reject) ::
-          :not_found | :ok
+          {:error, :not_found | :published} | :ok
   def make_decision(file_id, made_by, made_at, decision) do
     case Repo.one(from(s in Schema.Suggestion, where: s.file_id == ^file_id)) do
       nil ->
-        :not_found
+        {:error, :not_found}
+
+      %Schema.Suggestion{published: true} ->
+        {:error, :published}
 
       item ->
         Schema.Suggestion.make_decision(item, decision, made_at, made_by)
