@@ -35,7 +35,8 @@ defmodule CuteFemBot.MixProject do
       {:cachex, "~> 3.4"},
       {:elixir_uuid, "~> 1.2"},
       {:phoenix, "~> 1.6.6"},
-      {:cors_plug, "~> 3.0"}
+      {:cors_plug, "~> 3.0"},
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
     ]
   end
 
