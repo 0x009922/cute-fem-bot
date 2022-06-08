@@ -1,5 +1,5 @@
 defmodule Traffic.Builder do
-  defmacro __using__(opts) do
+  defmacro __using__(_opts) do
     quote do
       @behaviour Traffic.Point
 
@@ -18,8 +18,6 @@ defmodule Traffic.Builder do
   defmacro __before_compile__(env) do
     points = Module.get_attribute(env.module, :traffic_points)
 
-    caller_module = __CALLER__.module
-
     points_transformed =
       points
       |> Stream.map(fn
@@ -31,13 +29,13 @@ defmodule Traffic.Builder do
             is_module?(x) ->
               x
 
-            Module.defines?(caller_module, {x, 1}, :def) ->
+            Module.defines?(env.module, {x, 1}, :def) ->
               quote do
-                Function.capture(unquote(caller_module), unquote(x), 1)
+                Function.capture(unquote(env.module), unquote(x), 1)
               end
 
             true ->
-              raise "module #{inspect(caller_module)} should export #{inspect(x)}"
+              raise "module #{inspect(env.module)} should export #{inspect(x)}"
           end
       end)
       |> Enum.reverse()
