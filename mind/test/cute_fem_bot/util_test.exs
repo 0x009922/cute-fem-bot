@@ -38,7 +38,7 @@ defmodule CuteFemBotUtilTest do
 
   describe "parse_command" do
     test "cmd without mention" do
-      assert parse_command("/start") == %{cmd: "start"}
+      assert parse_command("/start") == %{cmd: "start", username: nil}
     end
 
     test "cmd with mention" do

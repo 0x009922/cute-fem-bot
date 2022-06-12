@@ -3,11 +3,19 @@ defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
   alias Telegram.Types.Message
   alias Telegram.Api
   alias CuteFemBot.Persistence
-  alias CuteFemBot.Logic.Handler.Ctx
+  alias CuteFemBot.Logic.Handler.Context
 
   import CuteFemBot.Logic.Handler.Admin.Shared
 
+  use Traffic.Builder
+
+  over(:handle_schedule)
+
   def command_schedule(ctx) do
+    send_init_msg_and_halt(ctx)
+  end
+
+  defp send_init_msg_and_halt(ctx) do
     msg =
       send_msg!(
         ctx,
@@ -23,148 +31,119 @@ defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
       )
 
     set_chat_state!(ctx, {:schedule, {:start, msg["message_id"]}})
+
+    halt(ctx)
   end
 
-  def handle(ctx) do
-    case chat_state(ctx) do
+  def handle_schedule(ctx) do
+    case Context.get_admin_chat_state!(ctx) do
       {:schedule, state} ->
-        case state do
-          {:start, msg_id} ->
-            result =
-              case ctx.update do
-                {
-                  :callback_query,
-                  %{
-                    "id" => query_id,
-                    "message" => %{"message_id" => ^msg_id},
-                    "data" => callback_data
-                  }
-                } ->
-                  action =
-                    case callback_data do
-                      "setup" -> :setup
-                      "show" -> :show
-                      _ -> :error
-                    end
-
-                  action_result =
-                    case action do
-                      :error ->
-                        :error
-
-                      :setup ->
-                        set_chat_state!(ctx, {:schedule, :setup})
-
-                        send_msg!(
-                          ctx,
-                          Message.with_text("""
-                          ОК, настраиваем расписание. Оно может быть указано на нескольких строках, \
-                          в формате <code>"#{"<category>;<flush>;<cron expression>" |> CuteFemBot.Util.escape_html()}"</code>. <code>category</code> \
-                          - это <i>SFW</i> или <i>NSFW</i> (case insensitive).
-
-                          Пример:
-                          <pre>
-                          sfw;1;0 12-20
-                          nsfw;10;*</pre>
-
-                          <i>Tip: составить крон можешь на https://crontab.guru/</i>
-                          """)
-                        )
-
-                        :ok
-
-                      :show ->
-                        schedule_show(ctx)
-                        :ok
-                    end
-
-                  case action_result do
-                    :ok ->
-                      Telegram.Api.answer_callback_query(Ctx.deps_api(ctx), query_id)
-                      :ok
-
-                    :error ->
-                      :error
-                  end
-              end
-
-            case result do
-              :ok ->
-                :halt
-
-              :error ->
-                send_msg!(ctx, Message.with_text("Не понял"))
-                command_schedule(ctx)
-                :halt
-            end
-
-          :setup ->
-            case ctx.update do
-              {:message, msg} ->
-                user_input = msg["text"]
-                parse_result = Schedule.Complex.from_raw(user_input)
-
-                case parse_result do
-                  {:ok, schedule} ->
-                    Persistence.set_schedule(schedule)
-                    CuteFemBot.Logic.Posting.reschedule(ctx.deps.posting)
-                    set_chat_state!(ctx, nil)
-                    send_msg!(ctx, %{"text" => "Ня. Новое расписание принято."})
-                    :halt
-
-                  {:error, msg} ->
-                    send_msg!(
-                      ctx,
-                      Message.with_text("""
-                      Не понял. Ты, наверное, сделал очепятку?
-                      <code>Ошибка: #{inspect(msg) |> CuteFemBot.Util.escape_html()}</code>
-                      """)
-                    )
-
-                    :halt
-                end
-
-              {:callback_query, %{"query_id" => id}} ->
-                Api.answer_callback_query(Ctx.deps_api(ctx), id)
-                :halt
-            end
-
-          # {:set, :flush, %Schedule.Entry{} = state} ->
-          #   case ctx.update do
-          #     {:message, %{"text" => raw_flush}} ->
-          #       case Posting.put_raw_flush(state, raw_flush) do
-          #         {:ok, updated} ->
-          #           Persistence.set_posting(ctx.deps.persistence, updated)
-          #           CuteFemBot.Logic.Posting.reschedule(ctx.deps.posting)
-          #           set_chat_state!(ctx, nil)
-          #           send_msg!(ctx, %{"text" => "Ня. Новое расписание принято."})
-          #           :halt
-
-          #         {:error, err} ->
-          #           send_msg!(ctx, %{
-          #             "text" => """
-          #             Не, ну я бы понял, если бы ты ошибся с написанием крона, но тут-то вроде всё просто... попробуй ещё раз, зай
-
-          #             <i>tip: #{err}</i>
-          #             """
-          #           })
-
-          #           :halt
-          #       end
-
-          #     {:callback_query, %{"query_id" => id}} ->
-          #       Api.answer_callback_query(Ctx.deps_api(ctx), id)
-          #       :halt
-          #   end
-
-          unknown_state ->
-            raise_invalid_chat_state!(ctx, unknown_state)
-            :halt
-        end
+        handle_schedule_state(ctx, state)
 
       _ ->
         # skip, out of "schedule" scope
-        :cont
+        ctx
+    end
+  end
+
+  defp handle_schedule_state(ctx, {:start, msg_id}) do
+    result =
+      case Context.get_parsed_update!(ctx) do
+        {
+          :callback_query,
+          %{
+            "id" => query_id,
+            "message" => %{"message_id" => ^msg_id},
+            "data" => callback_data
+          }
+        } ->
+          action =
+            case callback_data do
+              "setup" -> :setup
+              "show" -> :show
+              _ -> :error
+            end
+
+          action_result =
+            case action do
+              :error ->
+                :error
+
+              :setup ->
+                set_chat_state!(ctx, {:schedule, :setup})
+
+                send_msg!(
+                  ctx,
+                  Message.with_text("""
+                  ОК, настраиваем расписание. Оно может быть указано на нескольких строках, \
+                  в формате <code>"#{"<category>;<flush>;<cron expression>" |> CuteFemBot.Util.escape_html()}"</code>. <code>category</code> \
+                  - это <i>SFW</i> или <i>NSFW</i> (case insensitive).
+
+                  Пример:
+                  <pre>
+                  sfw;1;0 12-20
+                  nsfw;10;*</pre>
+
+                  <i>Tip: составить крон можешь на https://crontab.guru/</i>
+                  """)
+                )
+
+                :ok
+
+              :show ->
+                schedule_show(ctx)
+                :ok
+            end
+
+          case action_result do
+            :ok ->
+              Telegram.Api.answer_callback_query(Context.get_dep!(ctx, :telegram), query_id)
+              :ok
+
+            :error ->
+              :error
+          end
+      end
+
+    case result do
+      :ok ->
+        halt(ctx)
+
+      :error ->
+        send_msg!(ctx, Message.with_text("Не понял"))
+        send_init_msg_and_halt(ctx)
+    end
+  end
+
+  defp handle_schedule_state(ctx, :setup) do
+    case Context.get_parsed_update!(ctx) do
+      {:message, msg} ->
+        user_input = msg["text"]
+        parse_result = Schedule.Complex.from_raw(user_input)
+
+        case parse_result do
+          {:ok, schedule} ->
+            Persistence.set_schedule(schedule)
+            CuteFemBot.Logic.Posting.reschedule(ctx.deps.posting)
+            set_chat_state!(ctx, nil)
+            send_msg!(ctx, %{"text" => "Ня. Новое расписание принято."})
+            halt(ctx)
+
+          {:error, msg} ->
+            send_msg!(
+              ctx,
+              Message.with_text("""
+              Не понял. Ты, наверное, сделал очепятку?
+              <code>Ошибка: #{inspect(msg) |> CuteFemBot.Util.escape_html()}</code>
+              """)
+            )
+
+            halt(ctx)
+        end
+
+      {:callback_query, %{"query_id" => id}} ->
+        Api.answer_callback_query(Context.get_dep!(ctx, :telegram), id)
+        halt(ctx)
     end
   end
 
@@ -193,13 +172,13 @@ defmodule CuteFemBot.Logic.Handler.Admin.Schedule do
           end
       end
 
-    {:schedule, {:start, msg_id}} = chat_state(ctx)
+    {:schedule, {:start, msg_id}} = Context.get_admin_chat_state!(ctx)
     set_chat_state!(ctx, nil)
 
-    Api.request(Ctx.deps_api(ctx),
+    Api.request(Context.get_dep!(ctx, :telegram),
       method_name: "editMessageText",
       body: %{
-        "chat_id" => get_admin_id(ctx),
+        "chat_id" => get_admin_id!(ctx),
         "message_id" => msg_id,
         "text" => """
         <b>Текущее расписание</b>

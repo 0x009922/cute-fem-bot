@@ -1,4 +1,6 @@
 defmodule CuteFemBot.Util do
+  @type parsed_command() :: %{cmd: String.t(), username: nil | String.t()}
+
   def format_user_name(%{"id" => id} = user, mode, opts \\ [])
       when mode == :markdown or mode == :html do
     anonymous =
@@ -39,11 +41,12 @@ defmodule CuteFemBot.Util do
     "tg://user?id=#{id}"
   end
 
+  @spec parse_command(String.t()) :: :error | parsed_command()
   def parse_command(raw) do
     case Regex.scan(~r{^/(\w+)(?:@(\w+))?$}, raw) do
       [[_ | groups]] ->
         case groups do
-          [cmd] -> %{cmd: cmd}
+          [cmd] -> %{cmd: cmd, username: nil}
           [cmd, username] -> %{cmd: cmd, username: username}
         end
 
@@ -55,6 +58,8 @@ defmodule CuteFemBot.Util do
   def format_datetime(%DateTime{} = dt) do
     Calendar.strftime(dt, "%H:%M %d.%m.%Y %Z")
   end
+
+  def find_all_commands(msg)
 
   def find_all_commands(%{"text" => text}) do
     case Regex.scan(~r{/(\w+)(?:@(\w+))?}, text) do
