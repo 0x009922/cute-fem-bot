@@ -128,4 +128,26 @@ defmodule TrafficTest do
     assert {:ok, %Context{halted: true, halt_reason: {:ok, :left}}} =
              Traffic.run(Context.new() |> Context.assign(:payload, "go left"), [ComplexTraffic])
   end
+
+  test "traffic errors when point doesn't return a context" do
+    points = [fn _ -> :some_random_stuff end]
+    ctx = Context.new() |> Context.assign(:foo, :bar)
+    ctx_with_trace = %Context{ctx | trace: points}
+
+    assert {:error, err} = Traffic.run(ctx, points)
+    assert err == {:ctx_lost, ctx_with_trace, :some_random_stuff}
+  end
+
+  test "when error is raised at some point, traffic catches it" do
+    points = [
+      fn ctx -> Context.assign(ctx, :foo, "bar") end,
+      fn _ -> raise "nya" end
+    ]
+
+    assert {:error, err} = Traffic.run(Context.new(), points)
+    assert {:raise, err, _trace, %Context{} = ctx} = err
+    assert ctx.assigns == %{foo: "bar"}
+    assert ctx.trace == points |> Enum.reverse()
+    assert err == %RuntimeError{message: "nya"}
+  end
 end

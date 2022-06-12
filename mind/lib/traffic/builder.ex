@@ -3,7 +3,7 @@ defmodule Traffic.Builder do
   @handler_arity 1
 
   defmacro __using__(_opts) do
-    quote do
+    quote location: :keep do
       @behaviour Traffic.Point
 
       def handle(ctx) do
