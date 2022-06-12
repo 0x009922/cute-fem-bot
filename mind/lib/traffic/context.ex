@@ -5,19 +5,20 @@ defmodule Traffic.Context do
 
   typedstruct enforce: true do
     field(:halted, bool(), default: false)
-    field(:halt_payload, any(), default: nil)
-    field(:payload, any())
+    field(:halt_reason, any(), default: nil)
+    field(:trace, [any()], default: [])
+    field(:assigns, map(), default: %{})
   end
 
-  def with_payload(payload) do
-    %Self{payload: payload}
+  def new do
+    %Self{}
   end
 
-  def halt(%Self{} = ctx, reason \\ nil) do
-    %Self{ctx | halted: true, halt_payload: reason}
+  def halt(%Self{} = self, reason \\ nil) do
+    %Self{self | halted: true, halt_reason: reason}
   end
 
-  def set_payload(%Self{} = ctx, payload) do
-    %Self{ctx | payload: payload}
+  def assign(%Self{} = self, key, value) do
+    %Self{self | assigns: Map.put(self.assigns, key, value)}
   end
 end

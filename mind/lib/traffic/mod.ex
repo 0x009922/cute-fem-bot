@@ -1,7 +1,7 @@
 defmodule Traffic do
   alias Traffic.Context
 
-  @type ctx() :: Traffic.Context.t()
+  @type ctx() :: Context.t()
   @type point() :: module() | fun()
   @type run_error() :: :not_halted
 
@@ -21,12 +21,15 @@ defmodule Traffic do
   def move_on(%Context{halted: true} = ctx, _), do: ctx
 
   def move_on(ctx, [point | other_points]) do
-    treat_point(ctx, point)
+    push_trace(ctx, point)
+    |> handle_point(point)
     |> move_on(other_points)
   end
 
   def move_on(ctx, []), do: ctx
 
-  defp treat_point(ctx, point) when is_function(point), do: point.(ctx)
-  defp treat_point(ctx, point) when is_atom(point), do: apply(point, :treat, [ctx])
+  defp handle_point(ctx, point) when is_function(point), do: point.(ctx)
+  defp handle_point(ctx, point) when is_atom(point), do: apply(point, :handle, [ctx])
+
+  defp push_trace(%Context{trace: trace} = ctx, point), do: %Context{ctx | trace: [point | trace]}
 end
