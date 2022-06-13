@@ -7,18 +7,6 @@ defmodule CuteFemBot.Application do
 
   @impl true
   def start(_type, _args) do
-    cfg =
-      case CuteFemBot.Config.read_cfg() do
-        {:ok, %CuteFemBot.Config{} = cfg} ->
-          Logger.debug("Loaded config: #{inspect(cfg)}")
-          cfg
-
-        {:error, err} ->
-          fatal_exit("Unable to read config: #{inspect(err)}")
-      end
-
-    {:ok, cfg_ref} = CuteFemBot.Config.State.init(cfg)
-
     handle_update_fun = fn update ->
       CuteFemBot.Logic.Handler.handle(CuteFemBot.Logic.Handler, update)
     end
@@ -29,13 +17,14 @@ defmodule CuteFemBot.Application do
     bridge_cache = CuteFemBot.Server.Bridge.Cachex
 
     children = [
+      CuteFemBot.Config.State,
       CuteFemBot.Repo,
       {web_auth, name: web_auth},
       CuteFemBotWeb.Endpoint,
       {Cachex, name: bridge_cache, limit: 100},
       {
         CuteFemBotWeb.Bridge,
-        telegram: telegram, config: cfg_ref, finch: finch, cache: bridge_cache, web_auth: web_auth
+        telegram: telegram, finch: finch, cache: bridge_cache, web_auth: web_auth
       },
       # {
       #   Task,
@@ -53,14 +42,13 @@ defmodule CuteFemBot.Application do
         name: telegram,
         config: %Telegram.Api.Config{
           finch: finch,
-          token: cfg.api_token
+          token: fn -> CuteFemBot.Config.State.lookup!().api_token end
         }
       },
       {
         CuteFemBot.Logic.Stats,
         deps: %{
-          telegram: telegram,
-          cfg: cfg_ref
+          telegram: telegram
         }
       },
       {
@@ -68,7 +56,6 @@ defmodule CuteFemBot.Application do
         name: CuteFemBot.Logic.Handler,
         deps: %{
           api: telegram,
-          config: cfg_ref,
           posting: CuteFemBot.Logic.Posting,
           web_auth: web_auth
         }
@@ -77,20 +64,17 @@ defmodule CuteFemBot.Application do
         CuteFemBot.Logic.Posting,
         name: CuteFemBot.Logic.Posting,
         deps: %{
-          api: telegram,
-          config: cfg_ref
+          api: telegram
         }
       },
       {
         CuteFemBot.Logic.Tasks.SetCommands,
         deps: %{
-          api: telegram,
-          config: cfg_ref
+          api: telegram
         }
       },
       updater_spec(%{
         api: telegram,
-        config: cfg_ref,
         handler_fun: handle_update_fun
       })
     ]
@@ -99,9 +83,9 @@ defmodule CuteFemBot.Application do
     Supervisor.start_link(children, opts)
   end
 
-  defp updater_spec(%{api: api, config: cfg_ref, handler_fun: handler}) do
+  defp updater_spec(%{api: api, handler_fun: handler}) do
     %CuteFemBot.Config{long_polling_interval: lp_interval, updates_approach: approach} =
-      CuteFemBot.Config.State.lookup!(cfg_ref)
+      CuteFemBot.Config.State.lookup!()
 
     case approach do
       :long_polling ->
@@ -121,8 +105,7 @@ defmodule CuteFemBot.Application do
           [
             :webhook,
             deps: %{
-              api: api,
-              config: cfg_ref
+              api: api
             },
             handler_fun: handler
           ]
@@ -130,7 +113,7 @@ defmodule CuteFemBot.Application do
     end
   end
 
-  defp fatal_exit(message) do
-    Logger.emergency(message)
-  end
+  # defp fatal_exit(message) do
+  #   Logger.emergency(message)
+  # end
 end

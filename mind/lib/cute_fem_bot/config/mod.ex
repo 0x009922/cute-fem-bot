@@ -30,25 +30,41 @@ defmodule CuteFemBot.Config do
   end
 
   @doc """
-  Reads configuration from ENV & `config.yml`
+  Reads configuration from file.
+
+  File path is specified via config, e.g.
+
+  ```
+  config :cute_fem_bot, CuteFemBot.Config,
+    path: "data/config.yaml"
+  ```
   """
   @spec read_cfg() :: {:error, any()} | {:ok, __MODULE__.t()}
   def read_cfg() do
-    with {:ok, cwd} <- File.cwd(),
-         {:ok, parsed} <- YamlElixir.read_all_from_file(Path.join(cwd, "data/config.yml")),
-         {:ok, parsed} <-
-           (case parsed do
-              [x] -> {:ok, x}
-              _ -> {:error, "Bad config"}
-            end) do
-      case extract_cfg(parsed) do
-        %__MODULE__{} = cfg -> {:ok, cfg}
-      end
+    with {:ok, env} <- try_fetch_env(),
+         {:ok, path} <- try_get_file_path_from_env(env),
+         {:ok, raw_yaml} <- YamlElixir.read_all_from_file(path),
+         {:ok, parsed} <- extract_cfg(raw_yaml) do
+      {:ok, parsed}
     end
   end
 
-  defp extract_cfg(raw) do
-    %__MODULE__{
+  defp try_fetch_env() do
+    case Application.fetch_env(:cute_fem_bot, __MODULE__) do
+      :error -> {:error, "Configure #{inspect(__MODULE__)} first"}
+      ok -> ok
+    end
+  end
+
+  defp try_get_file_path_from_env(env) when is_list(env) do
+    case Keyword.fetch(env, :path) do
+      :error -> {:error, ":path key is not found in the config"}
+      ok -> ok
+    end
+  end
+
+  defp extract_cfg([raw]) when is_map(raw) do
+    cfg = %__MODULE__{
       api_token: Map.fetch!(raw, "api_token"),
       master: Map.fetch!(raw, "master"),
       admins: Map.fetch!(raw, "admins"),
@@ -64,6 +80,12 @@ defmodule CuteFemBot.Config do
         Map.get(raw, "long_polling_interval", 1500) |> normalize_str_to_num(),
       www_path: Map.get(raw, "www_path")
     }
+
+    {:ok, cfg}
+  end
+
+  defp extract_cfg(x) do
+    {:error, "Failed to parse config: #{inspect(x)}"}
   end
 
   defp normalize_str_to_num(num) when is_integer(num), do: num

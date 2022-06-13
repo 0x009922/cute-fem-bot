@@ -12,7 +12,7 @@ defmodule CuteFemBot.Logic.Handler.Entry do
   over(fn x -> halt(x) end)
 
   def fetch_config(ctx) do
-    state = CuteFemBot.Config.State.lookup!(Context.get_dep!(ctx, :config))
+    state = CuteFemBot.Config.State.lookup!()
     Context.put_config(ctx, state)
   end
 

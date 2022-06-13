@@ -10,8 +10,8 @@ defmodule CuteFemBot.Logic.Stats do
       field(:banned_actions, map(), default: %{})
     end
 
-    def report(%Self{} = self, tg, cfg) do
-      %Config{master: chat_id} = Config.State.lookup!(cfg)
+    def report(%Self{} = self, tg) do
+      %Config{master: chat_id} = Config.State.lookup!()
 
       {:ok, _} =
         Api.send_message(
@@ -69,7 +69,7 @@ defmodule CuteFemBot.Logic.Stats do
 
   @impl true
   def handle_info(:do_report, {%State{} = state, deps}) do
-    State.report(state, deps.telegram, deps.cfg)
+    State.report(state, deps.telegram)
 
     # continuing with a new state
     {:noreply, {%State{}, deps}}

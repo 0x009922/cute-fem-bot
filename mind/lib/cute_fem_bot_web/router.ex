@@ -16,7 +16,7 @@ defmodule CuteFemBotWeb.Router do
     get("/auth", Controllers.Auth, :show)
 
     scope "/suggestions" do
-      get("", Controllers.Suggestions, :index)
+      get("/", Controllers.Suggestions, :index)
       post("/:file_id/decision", Controllers.Suggestions, :make_decision)
     end
 

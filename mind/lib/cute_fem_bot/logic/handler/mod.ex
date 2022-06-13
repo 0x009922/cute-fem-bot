@@ -61,7 +61,7 @@ defmodule CuteFemBot.Logic.Handler do
     Ошибка: <pre>#{err_escaped}</pre>
     """
 
-    %CuteFemBot.Config{master: chat_id} = CuteFemBot.Config.State.lookup!(deps.config)
+    %CuteFemBot.Config{master: chat_id} = CuteFemBot.Config.State.lookup!()
 
     {:ok, _} =
       Api.send_message(

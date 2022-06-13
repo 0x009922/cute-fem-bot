@@ -8,7 +8,7 @@ defmodule CuteFemBot.Logic.Handler.Context do
   end
 
   def get_dep!(%Ctx{assigns: %{deps: %{telegram: value}}}, :telegram), do: value
-  def get_dep!(%Ctx{assigns: %{deps: %{config: value}}}, :config), do: value
+  # def get_dep!(%Ctx{assigns: %{deps: %{config: value}}}, :config), do: value
   def get_dep!(%Ctx{assigns: %{deps: %{posting: value}}}, :posting), do: value
   def get_dep!(%Ctx{assigns: %{deps: %{web_auth: value}}}, :web_auth), do: value
 

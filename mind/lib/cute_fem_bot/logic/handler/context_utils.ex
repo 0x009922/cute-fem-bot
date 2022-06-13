@@ -2,6 +2,11 @@ defmodule CuteFemBot.Logic.Handler.ContextUtils do
   alias Traffic.Context
   alias CuteFemBot.Logic.Handler.Context, as: HandlerContext
 
+  @doc """
+  Utility used to conditionally run middleware when some user command (or commands) is occured in the message.
+
+  Middleware type is that supported by `Traffic.move_on()` function, i.e. a function or a module.
+  """
   defmacro over_if_command(cmd, fun) when is_binary(cmd) do
     over_commands_guard([cmd], fun)
   end

@@ -85,7 +85,6 @@ defmodule CuteFemBotWeb.Bridge do
      %{
        telegram: Keyword.fetch!(opts, :telegram),
        finch: Keyword.fetch!(opts, :finch),
-       config: Keyword.fetch!(opts, :config),
        cache: Keyword.fetch!(opts, :cache),
        web_auth: Keyword.fetch!(opts, :web_auth)
      }}
@@ -103,8 +102,8 @@ defmodule CuteFemBotWeb.Bridge do
   end
 
   @impl true
-  def handle_call(:get_cors, _, %{config: cfg} = state) do
-    %CuteFemBot.Config{www_path: www} = CuteFemBot.Config.State.lookup!(cfg)
+  def handle_call(:get_cors, _, state) do
+    %CuteFemBot.Config{www_path: www} = CuteFemBot.Config.State.lookup!()
 
     {:reply, %{www: www}, state}
   end
@@ -127,7 +126,6 @@ defmodule CuteFemBotWeb.Bridge do
   defp try_get_file_response(
          %{
            telegram: tg,
-           config: cfg,
            finch: finch,
            cache: cache
          },
@@ -144,7 +142,7 @@ defmodule CuteFemBotWeb.Bridge do
 
       :error ->
         with {:ok, path} <- get_file_download_path_from_telegram(tg, file_id),
-             %CuteFemBot.Config{api_token: token} = CuteFemBot.Config.State.lookup!(cfg),
+             %CuteFemBot.Config{api_token: token} = CuteFemBot.Config.State.lookup!(),
              url = Telegram.Util.href_file(token, path),
              {:ok, %Finch.Response{} = resp} <- download_file(finch, url) do
           put_file_into_cache(cache, file_id, resp)

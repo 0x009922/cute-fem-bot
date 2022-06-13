@@ -40,7 +40,7 @@ defmodule CuteFemBot.Logic.Posting do
         |> Enum.take(flush_count)
 
       # file_ids = queue |> Enum.map(fn {_ty, file_id} -> file_id end)
-      %CuteFemBot.Config{posting_chat: chat_id} = CuteFemBot.Config.State.lookup!(deps.config)
+      %CuteFemBot.Config{posting_chat: chat_id} = CuteFemBot.Config.State.lookup!()
 
       Logger.debug("Posting files: #{inspect(queue)}")
 

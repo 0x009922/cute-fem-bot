@@ -7,6 +7,6 @@ defmodule Telegram.Api.Config do
 
   typedstruct do
     field(:finch, atom(), enforce: true)
-    field(:token, String.t(), enforce: true)
+    field(:token, String.t() | fun(), enforce: true)
   end
 end

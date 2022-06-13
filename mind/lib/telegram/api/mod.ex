@@ -70,9 +70,9 @@ defmodule Telegram.Api do
   defp prepare_body(str) when is_binary(str), do: str
   defp prepare_body(body), do: Jason.encode!(body)
 
-  @spec do_request_with_retries(Finch.Request.t(), String.t(), String.t(), any()) ::
+  @spec do_request_with_retries(Finch.Request.t(), String.t() | fun(), String.t(), any()) ::
           request_result()
-  defp do_request_with_retries(finch, token, method_name, request_body) do
+  defp do_request_with_retries(finch, token, method_name, request_body) when is_binary(token) do
     request_body = prepare_body(request_body)
 
     Logger.debug("Making request to Telegram: #{method_name}; body: #{inspect(request_body)}")
@@ -113,6 +113,11 @@ defmodule Telegram.Api do
             {:error, {:telegram_confusing_body, unknown_body}}
         end
     end
+  end
+
+  defp do_request_with_retries(finch, token, method_name, request_body)
+       when is_function(token, 0) do
+    do_request_with_retries(finch, token.(), method_name, request_body)
   end
 
   # client api
