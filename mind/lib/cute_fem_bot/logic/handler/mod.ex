@@ -49,23 +49,32 @@ defmodule CuteFemBot.Logic.Handler do
   end
 
   defp handle_error(deps, any_error) do
-    err_inspect = inspect(any_error)
+    case any_error do
+      {:raised, err, trace, ctx} ->
+        formatted = Exception.format(:error, err, trace)
+        Logger.error("Raised error: #{formatted}\n\nContext: #{inspect(ctx, pretty: true)}")
 
-    Logger.error("Handler error: #{err_inspect}")
+      err ->
+        formatted = inspect(err, pretty: true)
+        Logger.error("Handler error: #{formatted}")
+    end
 
-    err_escaped = err_inspect |> CuteFemBot.Util.escape_html()
+    err_inspect_telegram =
+      inspect(any_error, pretty: true, syntax_colors: [], limit: 10)
+      |> CuteFemBot.Util.escape_html()
+      |> String.slice(0..4000)
 
     text = """
     Хозяин, у меня ошибка во время обработки апдейта.
 
-    Ошибка: <pre>#{err_escaped}</pre>
+    Ошибка: <pre>#{err_inspect_telegram}</pre>
     """
 
     %CuteFemBot.Config{master: chat_id} = CuteFemBot.Config.State.lookup!()
 
     {:ok, _} =
       Api.send_message(
-        deps.api,
+        deps.telegram,
         Message.with_text(text) |> Message.set_chat_id(chat_id) |> Message.set_parse_mode("html")
       )
   end

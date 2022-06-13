@@ -11,7 +11,7 @@ defmodule CuteFemBot.Logic.Posting do
   end
 
   @impl true
-  def init(%{config: _, api: _} = deps) do
+  def init(%{api: _} = deps) do
     schedule_posting(0)
 
     {:ok, %{deps: deps, key: 0}}

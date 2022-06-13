@@ -1,7 +1,8 @@
 defmodule CuteFemBot.Logic.Handler.Entry do
   require Logger
   use Traffic.Builder
-  alias CuteFemBot.Logic.Handler.Context
+  alias CuteFemBot.Logic.Handler
+  alias Handler.Context
   alias CuteFemBot.Persistence
 
   over(:fetch_config)

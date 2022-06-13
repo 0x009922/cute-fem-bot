@@ -14,7 +14,7 @@ defmodule CuteFemBot.Logic.Handler.Suggestions do
   over_if_command(["start", "help"], &welcome/1)
   over(:parse_suggestion)
 
-  def banlist_guard(ctx) do
+  def banlist_guard(%Traffic.Context{} = ctx) do
     ban_list = Persistence.get_ban_list()
     user_id = ctx_get_user_id(ctx)
 
@@ -34,17 +34,19 @@ defmodule CuteFemBot.Logic.Handler.Suggestions do
     end
   end
 
-  def welcome(ctx) do
+  def welcome(%Traffic.Context{} = ctx) do
     send_msg!(
       ctx,
-      Message.with_text(CuteFemBot.Logic.Speaking.msg_suggestions_welcome(ctx_get_lang(ctx)))
+      Message.with_text(
+        CuteFemBot.Logic.Speaking.msg_suggestions_welcome(Context.get_update_user_lang!(ctx))
+      )
     )
 
     halt(ctx)
   end
 
-  def parse_suggestion(ctx) do
-    case ctx.update do
+  def parse_suggestion(%Traffic.Context{} = ctx) do
+    case Context.get_parsed_update!(ctx) do
       {:message, msg} ->
         case Suggestion.extract_from_message(msg) do
           :none ->
@@ -70,15 +72,15 @@ defmodule CuteFemBot.Logic.Handler.Suggestions do
                 nil
             end
 
-            :halt
+            halt(ctx)
         end
 
       _ ->
-        :cont
+        ctx
     end
   end
 
-  defp reply_ignore!(ctx) do
+  defp reply_ignore!(%Traffic.Context{} = ctx) do
     send_stick!(
       ctx,
       Message.with_sticker(Speaking.sticker_ignore())
@@ -86,15 +88,15 @@ defmodule CuteFemBot.Logic.Handler.Suggestions do
     )
   end
 
-  defp reply_media_not_found!(ctx) do
+  defp reply_media_not_found!(%Traffic.Context{} = ctx) do
     send_msg!(
       ctx,
-      Message.with_text(Speaking.msg_suggestions_no_media(ctx_get_lang(ctx)))
+      Message.with_text(Speaking.msg_suggestions_no_media(Context.get_update_user_lang!(ctx)))
       |> Message.set_reply_to(ctx_get_msg_id(ctx), true)
     )
   end
 
-  defp reply_with_thx!(ctx) do
+  defp reply_with_thx!(%Traffic.Context{} = ctx) do
     send_stick!(
       ctx,
       Message.with_sticker(Speaking.sticker_suggestion_accepted())
@@ -102,32 +104,26 @@ defmodule CuteFemBot.Logic.Handler.Suggestions do
     )
   end
 
-  defp ctx_get_msg(%{update: {:message, msg}}), do: msg
-
-  defp ctx_get_msg_id(ctx) do
-    %{"message_id" => id} = ctx_get_msg(ctx)
+  defp ctx_get_msg_id(%Traffic.Context{} = ctx) do
+    {:message, %{"message_id" => id}} = Context.get_parsed_update!(ctx)
     id
   end
 
-  # defp ctx_get_user(%{source: %{user: user}}), do: user
-
-  defp ctx_get_user_id(ctx) do
+  defp ctx_get_user_id(%Traffic.Context{} = ctx) do
     %{"id" => id} = Context.get_update_source!(ctx, :user)
     id
   end
 
-  defp ctx_get_lang(%{source: %{lang: x}}), do: x
-
-  defp send_suggestion_to_admins!(ctx, %Suggestion{} = item) do
+  defp send_suggestion_to_admins!(%Traffic.Context{} = ctx, %Suggestion{} = item) do
     %{method_name: method, body_part: media_body_part} = Suggestion.to_telegram_send(item)
 
-    {:message, msg} = ctx.update
+    {:message, msg} = Context.get_parsed_update!(ctx)
     user_caption = Map.get(msg, "caption", "")
     user_caption_entities = Map.get(msg, "caption_entities", [])
 
     suggestion_message =
       Logic.Handler.Util.construct_suggestion_message_part(%{
-        user: ctx.source.user,
+        user: Context.get_update_source!(ctx, :user),
         user_caption: user_caption,
         user_caption_entities: user_caption_entities
       })

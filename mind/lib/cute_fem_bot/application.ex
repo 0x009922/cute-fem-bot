@@ -26,13 +26,7 @@ defmodule CuteFemBot.Application do
         CuteFemBotWeb.Bridge,
         telegram: telegram, finch: finch, cache: bridge_cache, web_auth: web_auth
       },
-      # {
-      #   Task,
-      #   fn ->
-      #     {:ok, key, _} = CuteFemBot.Logic.WebAuth.create_key(web_auth, 333)
-      #     Logger.debug("Debug key: #{key}")
-      #   end
-      # }
+      # dev_spec_once_web_auth_create_key(web_auth),
       {
         Finch,
         name: CuteFemBot.Finch
@@ -55,7 +49,7 @@ defmodule CuteFemBot.Application do
         CuteFemBot.Logic.Handler,
         name: CuteFemBot.Logic.Handler,
         deps: %{
-          api: telegram,
+          telegram: telegram,
           posting: CuteFemBot.Logic.Posting,
           web_auth: web_auth
         }
@@ -73,45 +67,30 @@ defmodule CuteFemBot.Application do
           api: telegram
         }
       },
-      updater_spec(%{
-        api: telegram,
-        handler_fun: handle_update_fun
-      })
+      {
+        Telegram.Updater,
+        [
+          :long_polling,
+          api: telegram,
+          handler_fun: handle_update_fun,
+          interval: fn -> CuteFemBot.Config.State.lookup!().long_polling_interval end
+        ]
+      }
     ]
 
     opts = [strategy: :one_for_one, name: CuteFemBot.Supervisor]
     Supervisor.start_link(children, opts)
   end
 
-  defp updater_spec(%{api: api, handler_fun: handler}) do
-    %CuteFemBot.Config{long_polling_interval: lp_interval, updates_approach: approach} =
-      CuteFemBot.Config.State.lookup!()
-
-    case approach do
-      :long_polling ->
-        {
-          Telegram.Updater,
-          [
-            :long_polling,
-            interval: lp_interval,
-            handler_fun: handler,
-            api: api
-          ]
-        }
-
-      :webhook ->
-        {
-          Telegram.Updater,
-          [
-            :webhook,
-            deps: %{
-              api: api
-            },
-            handler_fun: handler
-          ]
-        }
-    end
-  end
+  # defp dev_spec_once_web_auth_create_key(web_auth) do
+  #   {
+  #     Task,
+  #     fn ->
+  #       {:ok, key, _} = CuteFemBotWeb.Auth.create_key(web_auth, 333)
+  #       Logger.debug("Debug key: #{key}")
+  #     end
+  #   }
+  # end
 
   # defp fatal_exit(message) do
   #   Logger.emergency(message)

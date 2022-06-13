@@ -3,7 +3,7 @@ defmodule CuteFemBot.Logic.Handler.Context do
 
   alias Traffic.Context, as: Ctx
 
-  def put_deps(%Ctx{} = ctx, %{telegram: _, config: _, posting: _, web_auth: _} = deps) do
+  def put_deps(%Ctx{} = ctx, %{telegram: _, posting: _, web_auth: _} = deps) do
     Ctx.assign(ctx, :deps, deps)
   end
 
@@ -37,6 +37,7 @@ defmodule CuteFemBot.Logic.Handler.Context do
         |> Ctx.assign(:update_parsed, {:message, msg})
         |> Ctx.assign(:update_from_user, user)
         |> Ctx.assign(:update_from_chat, chat)
+        |> Ctx.assign(:update_user_lang, user_lang(user))
         |> Ctx.assign(:message_commands, CuteFemBot.Util.find_all_commands(msg))
 
       %{
@@ -52,6 +53,7 @@ defmodule CuteFemBot.Logic.Handler.Context do
         |> Ctx.assign(:update_parsed, {:callback_query, query})
         |> Ctx.assign(:update_from_user, user)
         |> Ctx.assign(:update_from_chat, chat)
+        |> Ctx.assign(:update_user_lang, user_lang(user))
 
       _unknown ->
         ctx
@@ -63,6 +65,8 @@ defmodule CuteFemBot.Logic.Handler.Context do
 
   def get_update_source!(%Ctx{assigns: %{update_from_user: value}}, :user), do: value
   def get_update_source!(%Ctx{assigns: %{update_from_chat: value}}, :chat), do: value
+
+  def get_update_user_lang!(%Ctx{assigns: %{update_user_lang: value}}), do: value
 
   def get_message_commands(%Ctx{assigns: %{message_commands: value}}), do: value
   def get_message_commands(_), do: nil
@@ -79,4 +83,6 @@ defmodule CuteFemBot.Logic.Handler.Context do
   end
 
   def get_admin_chat_state!(%Ctx{assigns: %{admin_chat_state: state}}), do: state
+
+  defp user_lang(%{"language_code" => x}), do: x
 end
