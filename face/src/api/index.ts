@@ -18,6 +18,7 @@ export function setAuth(value: string | null) {
 }
 
 export interface FetchSuggestionsResponse {
+  pagination: PaginationResolved
   suggestions: SchemaSuggestion[]
   users: SchemaUser[]
 }
@@ -25,6 +26,7 @@ export interface FetchSuggestionsResponse {
 export interface FetchSuggestionsParams extends PaginationParams {
   published?: boolean
   decision?: SuggestionDecisionParam
+  order_by_decision_date?: 'asc' | 'desc'
 }
 
 export const SUGGESTION_DECISION_PARAM_VALUES = ['sfw', 'nsfw', 'none', 'whatever'] as const
@@ -34,6 +36,10 @@ export type SuggestionDecisionParam = typeof SUGGESTION_DECISION_PARAM_VALUES[nu
 export interface PaginationParams {
   page?: number
   page_size?: number
+}
+
+export interface PaginationResolved extends Required<PaginationParams> {
+  total: number
 }
 
 export async function fetchSuggestions(params?: FetchSuggestionsParams): Promise<FetchSuggestionsResponse> {
@@ -47,10 +53,6 @@ export async function fetchSuggestions(params?: FetchSuggestionsParams): Promise
 export interface FetchFileResponse {
   blob: Blob
   contentType: string | null
-}
-
-export interface UpdateSuggestionParams {
-  decision?: SchemaSuggestionDecision
 }
 
 export async function fetchFile(fileId: string): Promise<FetchFileResponse | null> {
@@ -68,6 +70,6 @@ export async function fetchFile(fileId: string): Promise<FetchFileResponse | nul
     })
 }
 
-export async function updateSuggestion(fileId: string, params: UpdateSuggestionParams): Promise<void> {
-  await axios.put(`/suggestions/${fileId}`, params)
+export async function makeDecision(fileId: string, decision: SchemaSuggestionDecision): Promise<void> {
+  await axios.put(`/suggestions/${fileId}/decision`, { decision })
 }

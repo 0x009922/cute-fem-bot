@@ -5,7 +5,7 @@ import User from '../User.vue'
 
 const suggestionsStore = useSuggestionsStore()
 
-const items = $computed(() => suggestionsStore.data?.val.suggestions)
+const items = $computed(() => suggestionsStore.suggestions)
 </script>
 
 <template>
@@ -13,6 +13,8 @@ const items = $computed(() => suggestionsStore.data?.val.suggestions)
     v-if="items"
     class="grid sm:grid-cols-2 gap-4 py-4"
   >
+    <code>{{ suggestionsStore.data?.pagination }}</code>
+
     <template v-if="items.length">
       <Suggestion
         v-for="item in items"
@@ -23,7 +25,7 @@ const items = $computed(() => suggestionsStore.data?.val.suggestions)
           v-if="suggestionsStore.usersMap"
           #user
         >
-          <User :data="suggestionsStore.usersMap!.get(item.suggestor_id)!" />
+          <User :data="suggestionsStore.usersMap!.get(item.made_by)!" />
         </template>
       </Suggestion>
     </template>

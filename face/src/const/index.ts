@@ -10,5 +10,5 @@ export const SUGGESTION_DECISION_PARAM_RU: Record<SuggestionDecisionParam, strin
   none: 'Не принято',
   sfw: 'SFW',
   nsfw: 'NSFW',
-  whatever: 'Не важно',
+  whatever: 'Любое',
 }

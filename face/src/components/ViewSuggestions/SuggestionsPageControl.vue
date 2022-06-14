@@ -1,17 +1,12 @@
 <script setup lang="ts">
-import { useSuggestionsStore } from '~/stores/suggestions'
+import { useSuggestionsParamsStore } from '~/stores/suggestions'
 import IconPlus from '~icons/ic/round-plus'
 import IconMinus from '~icons/ic/round-minus'
 
-const suggestionsStore = useSuggestionsStore()
+const params = useSuggestionsParamsStore()
+const storePage = $(toRef(params, 'page'))
 
-const storePage = $computed({
-  get: () => suggestionsStore.params.page,
-  set(v) {
-    suggestionsStore.params.page = v
-  },
-})
-let page = $ref(storePage as number)
+let page = $ref(storePage)
 let pageDebounced = refDebounced($$(page), 300)
 
 syncRef($$(storePage), $$(page))

@@ -9,21 +9,22 @@
   },
   "dependencies": {
     "@grammyjs/web-app": "^0.0.1",
-    "@vueuse/core": "^8.3.1",
-    "@vueuse/router": "^8.3.1",
+    "@vue-swr-composable/core": "^0.1.0",
+    "@vueuse/core": "^8.6.0",
+    "@vueuse/router": "^8.6.0",
     "axios": "^0.27.2",
     "luxon": "^2.3.2",
-    "pinia": "^2.0.13",
-    "vue": "^3.2.33",
-    "vue-router": "^4.0.14"
+    "pinia": "^2.0.14",
+    "vue": "^3.2.37",
+    "vue-router": "^4.0.16"
   },
   "devDependencies": {
     "@iconify/json": "^2.1.35",
     "@types/luxon": "^2.3.2",
-    "@typescript-eslint/eslint-plugin": "^5.22.0",
-    "@typescript-eslint/parser": "^5.22.0",
+    "@typescript-eslint/eslint-plugin": "^5.28.0",
+    "@typescript-eslint/parser": "^5.28.0",
     "@unocss/reset": "^0.32.9",
-    "@vitejs/plugin-vue": "^2.3.1",
+    "@vitejs/plugin-vue": "^2.3.3",
     "eslint": "^7",
     "eslint-config-alloy": "^4.5.1",
     "eslint-plugin-vue": "^8.7.1",
@@ -32,9 +33,9 @@
     "type-fest": "^2.12.2",
     "typescript": "^4.6.4",
     "unocss": "^0.32.9",
-    "unplugin-auto-import": "^0.7.1",
+    "unplugin-auto-import": "^0.8.8",
     "unplugin-icons": "^0.14.3",
-    "vite": "^2.9.7",
+    "vite": "^2.9.12",
     "vue-tsc": "^0.32.0"
   }
 }

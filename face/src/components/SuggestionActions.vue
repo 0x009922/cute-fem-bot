@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SchemaSuggestion, SchemaSuggestionDecision, updateSuggestion } from '../api'
+import { SchemaSuggestion, SchemaSuggestionDecision, makeDecision } from '../api'
 import { useSuggestionsStore } from '../stores/suggestions'
 import SuggestionCardLine from './SuggestionCardLine.vue'
 
@@ -9,11 +9,7 @@ const props = defineProps<{
 
 const suggestionsStore = useSuggestionsStore()
 
-const OPTIONS: { label: string; value: SchemaSuggestionDecision }[] = [
-  {
-    label: 'Нет',
-    value: null,
-  },
+const OPTIONS: { label: string; value: SchemaSuggestionDecision | null }[] = [
   {
     label: 'SFW',
     value: 'sfw',
@@ -22,28 +18,23 @@ const OPTIONS: { label: string; value: SchemaSuggestionDecision }[] = [
     label: 'NSFW',
     value: 'nsfw',
   },
+  {
+    label: 'Отклонено',
+    value: 'reject',
+  },
 ]
 
-let decision = $ref<SchemaSuggestionDecision>(props.data.decision)
-
-const changes = $computed<boolean>(() => decision !== props.data.decision)
-
-whenever($$(changes), submit)
-
-let applying = $ref(false)
-
-async function submit() {
-  if (applying) return
-
-  try {
-    applying = true
-
-    await updateSuggestion(props.data.file_id, { decision })
+const { isLoading: isPending, execute: makeDecisionAndUpdateStore } = useAsyncState(
+  async () => {
+    await makeDecision(props.data.file_id, decision!)
     suggestionsStore.mutate()
-  } finally {
-    applying = false
-  }
-}
+  },
+  null,
+  { immediate: false },
+)
+
+let decision = $ref<SchemaSuggestionDecision | null>(props.data.decision)
+whenever<any>(() => decision && decision !== props.data.decision, makeDecisionAndUpdateStore)
 </script>
 
 <template>
@@ -55,7 +46,7 @@ async function submit() {
       <select
         v-model="decision"
         class="mt-2"
-        :disabled="applying"
+        :disabled="isPending"
       >
         <option
           v-for="opt in OPTIONS"

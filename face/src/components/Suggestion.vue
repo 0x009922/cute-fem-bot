@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { useFilesStore, FILE_IS_UNAVAILABLE } from '../stores/files'
+import { isUnavailable, useFileSwr } from '../stores/files'
 import SuggestionActions from './SuggestionActions.vue'
 import SuggestionPreview from './SuggestionPreview.vue'
 import FormatDate from './FormatDate.vue'
 import { usePreviewStore } from '../stores/preview'
 import { useSuggestionsStore } from '../stores/suggestions'
-import { fetchFile } from '../api'
 import Spinner from './Spinner.vue'
 import SuggestionCardLine from './SuggestionCardLine.vue'
 
@@ -15,10 +14,13 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const filesStore = useFilesStore()
 const suggestionsStore = useSuggestionsStore()
 
+// different data
+
 const data = $computed(() => suggestionsStore.suggestionsMapped!.get(props.fileId)!)
+const typeDefinitely = $computed(() => suggestionsStore.suggestionTypes!.get(props.fileId)!)
+const isPreviewable = $computed(() => typeDefinitely !== 'document')
 
 // INTERSECTION
 
@@ -31,46 +33,19 @@ useIntersectionObserver(root, ([{ isIntersecting }]) => {
 
 // LOADING
 
-const fileInStore = $computed(() => filesStore.loaded[props.fileId])
-const {
-  isLoading,
-  execute: load,
-  error,
-} = $(
-  useAsyncState<undefined>(
-    async () => {
-      const maybeFile = await fetchFile(props.fileId)
-      if (maybeFile) {
-        const { blob, contentType } = maybeFile
-        const src = URL.createObjectURL(blob)
+const shouldLoad = $computed(() => isVisible && isPreviewable)
+const { resource: fileResource } = useFileSwr(computed(() => (shouldLoad ? props.fileId : null)))
 
-        filesStore.loaded[props.fileId] = { src, contentType }
-      } else {
-        filesStore.setAsNotAvailable(props.fileId)
-      }
-      return undefined
-    },
-    undefined,
-    { immediate: false },
-  ),
-)
-
-const isFileLoaded = $computed(() => !!fileInStore)
-
-const shouldLoad = $computed(() => !isFileLoaded && isVisible && !isLoading && isPreviewable && !error)
-
-whenever($$(shouldLoad), () => load(), { immediate: true })
+const isPending = $computed(() => fileResource.value?.state.pending ?? false)
+const file = $computed(() => fileResource.value?.state.data?.some)
+const error = $computed(() => fileResource.value?.state.error?.some)
 
 // PREVIEW
 
 const previewStore = usePreviewStore()
 
-const typeDefinitely = $computed(() => suggestionsStore.suggestionTypes!.get(props.fileId)!)
-const isPreviewable = $computed(() => typeDefinitely !== 'document')
-const fileBlobSrc = $computed<undefined | string>(() =>
-  fileInStore === FILE_IS_UNAVAILABLE ? undefined : fileInStore?.src,
-)
-const fileIsUnavailable = $computed(() => fileInStore === FILE_IS_UNAVAILABLE)
+const fileBlobSrc = $computed<undefined | string>(() => (isUnavailable(file) ? undefined : file?.src))
+const fileIsUnavailable = $computed(() => isUnavailable(file))
 
 function openPreview() {
   previewStore.open(props.fileId)
@@ -83,7 +58,7 @@ function openPreview() {
     class="min-h-100px shadow rounded relative overflow-hidden flex flex-col"
   >
     <Spinner
-      v-if="isLoading"
+      v-if="isPending"
       class="absolute right-0 top-0 m-2 z-50"
     />
 

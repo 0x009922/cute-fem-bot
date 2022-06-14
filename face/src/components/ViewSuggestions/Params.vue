@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { SuggestionDecisionParam, SUGGESTION_DECISION_PARAM_VALUES } from '~/api'
 import { SUGGESTION_DECISION_PARAM_RU } from '~/const'
-import { useSuggestionsStore } from '~/stores/suggestions'
+import { useSuggestionsParamsStore, useSuggestionsStore } from '~/stores/suggestions'
 import SuggestionsPageControl from './SuggestionsPageControl.vue'
 
+const paramsStore = useSuggestionsParamsStore()
 const suggestionsStore = useSuggestionsStore()
 
 function decisionRu(value: SuggestionDecisionParam) {
@@ -28,7 +29,7 @@ function decisionRu(value: SuggestionDecisionParam) {
           <label for="decision-select"> Решение: </label>
           <select
             id="decision-select"
-            v-model="suggestionsStore.params.decision"
+            v-model="paramsStore.decision"
           >
             <option
               v-for="x in SUGGESTION_DECISION_PARAM_VALUES"
@@ -43,7 +44,7 @@ function decisionRu(value: SuggestionDecisionParam) {
         <div>
           <input
             id="published-checkbox"
-            v-model="suggestionsStore.params.published"
+            v-model="paramsStore.published"
             type="checkbox"
           >
           <label for="published-checkbox"> Опубликовано </label>
