@@ -1,10 +1,13 @@
 defmodule CuteFemBot.Core.Pagination.Params do
+  @moduledoc """
+  Pagination *params*, parsed from raw format and used for querying
+  """
+
   alias CuteFemBot.Core.Pagination.Params, as: Self
   alias Ecto.Changeset
 
   use TypedStruct
 
-  @derive {Jason.Encoder, []}
   typedstruct do
     field(:page, pos_integer(), default: 1)
     field(:page_size, pos_integer(), enforce: true)

@@ -51,7 +51,7 @@ defmodule CuteFemBot.Logic.Handler.Suggestions do
         case Suggestion.extract_from_message(msg) do
           :none ->
             reply_media_not_found!(ctx)
-            :halt
+            halt(ctx)
 
           {:ok, %Suggestion{} = item} ->
             case Persistence.find_existing_unapproved_suggestion_by_file_id(item.file_id) do

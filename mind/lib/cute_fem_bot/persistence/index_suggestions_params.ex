@@ -1,4 +1,4 @@
-defmodule CuteFemBotWeb.Bridge.IndexSuggestionsParams do
+defmodule CuteFemBot.Persistence.IndexSuggestionsParams do
   use TypedStruct
   alias Ecto.Changeset
   alias CuteFemBot.Core.Pagination.Params, as: PaginationParams

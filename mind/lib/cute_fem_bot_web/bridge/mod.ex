@@ -2,7 +2,6 @@ defmodule CuteFemBotWeb.Bridge do
   alias CuteFemBot.Repo
   alias CuteFemBot.Schema
   alias Telegram.Api
-  alias CuteFemBotWeb.Bridge.IndexSuggestionsParams
   import Ecto.Query
   require Logger
   use GenServer
@@ -15,39 +14,6 @@ defmodule CuteFemBotWeb.Bridge do
 
   def get_file(file_id) do
     GenServer.call(__MODULE__, {:get_file, file_id}, 300_000)
-  end
-
-  def index_suggestions(%IndexSuggestionsParams{} = params) do
-    query =
-      from(s in Schema.Suggestion,
-        order_by: [desc: s.inserted_at]
-      )
-      |> IndexSuggestionsParams.apply_to_query(params)
-
-    query =
-      from(s in query,
-        join: u in Schema.User,
-        on: s.suggestor_id == u.id,
-        select: {s, u}
-      )
-
-    {suggestions, users} =
-      Repo.all(query)
-      |> Enum.unzip()
-
-    %{
-      pagination: params.pagination,
-      suggestions: suggestions,
-      users:
-        Stream.uniq_by(users, fn %{id: id} -> id end)
-        |> Enum.map(fn %Schema.User{} = user ->
-          %{
-            id: user.id,
-            banned: user.banned,
-            meta: Schema.User.decode_meta(user)
-          }
-        end)
-    }
   end
 
   @spec make_suggestion_decision(binary(), :sfw | :nsfw | :reject, pos_integer()) ::

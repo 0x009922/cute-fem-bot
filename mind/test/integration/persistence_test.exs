@@ -4,6 +4,7 @@ defmodule CuteFemBotPersistenceTest do
 
   alias CuteFemBot.Persistence
   alias CuteFemBot.Schema.Suggestion
+  alias Persistence.IndexSuggestionsParams
 
   setup do
     Ecto.Adapters.SQL.Sandbox.checkout(CuteFemBot.Repo)
@@ -182,6 +183,116 @@ defmodule CuteFemBotPersistenceTest do
       Persistence.set_schedule(v2)
 
       assert Persistence.get_schedule() == v2
+    end
+  end
+
+  describe "indexing suggestions" do
+    defp load_data() do
+      # 3 users, 5 suggestions, one of them without a user
+
+      users = [
+        %{"username" => "foo", "id" => 0},
+        %{"first_name" => "bar", "id" => 1},
+        # admin
+        %{"id" => 5}
+      ]
+
+      suggestions = [
+        %{
+          init: Suggestion.new(:photo, "id-1", 0)
+        },
+        %{
+          init: Suggestion.new(:video, "id-2", 1),
+          decision: {~U[2024-01-02 12:00:00Z], 5, :sfw}
+        },
+        %{
+          init: Suggestion.new(:document, "id-3", 1),
+          decision: {~U[2024-01-02 18:00:00Z], 5, :reject}
+        },
+        %{
+          init: Suggestion.new(:photo, "id-4", 0),
+          decision: {~U[2024-01-02 14:00:00Z], 5, :reject}
+        },
+        %{
+          init: Suggestion.new(:photo, "id-5", 99),
+          decision: {~U[2024-01-02 15:00:00Z], 5, :nsfw},
+          published: true
+        }
+      ]
+
+      Enum.each(users, fn data -> Persistence.update_user_meta(data) end)
+
+      Enum.each(suggestions, fn item ->
+        %{init: init} = item
+        Persistence.add_new_suggestion(init)
+
+        case item do
+          %{decision: {date, made_by, kind}} ->
+            Persistence.make_decision(init.file_id, made_by, date, kind)
+
+          _ ->
+            nil
+        end
+
+        case item do
+          %{published: true} -> Persistence.check_as_published([init.file_id])
+          _ -> nil
+        end
+      end)
+    end
+
+    setup do
+      load_data()
+    end
+
+    test "indexing without params" do
+      {:ok, params} = IndexSuggestionsParams.from_raw_query(%{})
+
+      assert %{pagination: p, suggestions: s, users: u} = Persistence.index_suggestions(params)
+      assert p.total == 5
+
+      assert Enum.map(u, fn u -> u.id end) |> Enum.into(MapSet.new()) ==
+               MapSet.new([
+                 0,
+                 1,
+                 # admin is fetched too
+                 5
+               ])
+
+      assert length(s) == 5
+    end
+
+    test "only published" do
+      {:ok, params} = IndexSuggestionsParams.from_raw_query(%{published: true})
+
+      assert %{pagination: p, suggestions: s} = Persistence.index_suggestions(params)
+      assert p.total == 1
+      assert [%Suggestion{file_id: "id-5"}] = s
+    end
+
+    test "ordering by decision date desc" do
+      {:ok, params} = IndexSuggestionsParams.from_raw_query(%{order_by_decision_date: :desc})
+
+      assert %{suggestions: s} = Persistence.index_suggestions(params)
+
+      assert Enum.map(s, & &1.file_id) == [
+               "id-3",
+               "id-5",
+               "id-4",
+               "id-2",
+               # no decision - counted too
+               "id-1"
+             ]
+    end
+
+    test "limiting page size" do
+      {:ok, params} = IndexSuggestionsParams.from_raw_query(%{page_size: 2})
+
+      assert %{pagination: p, suggestions: s, users: u} = Persistence.index_suggestions(params)
+      assert p.total == 5
+      assert p.page_size == 2
+      assert length(s) == 2
+      assert length(u) == 2
     end
   end
 

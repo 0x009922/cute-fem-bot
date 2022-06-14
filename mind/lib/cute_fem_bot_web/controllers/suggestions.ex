@@ -2,7 +2,7 @@ defmodule CuteFemBotWeb.Controllers.Suggestions do
   use CuteFemBotWeb, :controller
 
   def index(%Plug.Conn{query_params: query} = conn, _) do
-    params_result = CuteFemBotWeb.Bridge.IndexSuggestionsParams.from_raw_query(query)
+    params_result = CuteFemBot.Persistence.IndexSuggestionsParams.from_raw_query(query)
 
     case params_result do
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -11,7 +11,7 @@ defmodule CuteFemBotWeb.Controllers.Suggestions do
         |> json(CuteFemBot.Util.format_changeset_errors(changeset))
 
       {:ok, params} ->
-        data = CuteFemBotWeb.Bridge.index_suggestions(params)
+        data = CuteFemBot.Persistence.index_suggestions(params)
 
         conn
         |> json(data)

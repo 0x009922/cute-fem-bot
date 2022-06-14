@@ -1,6 +1,6 @@
-defmodule CuteFemBotWebBridgeSuggestionsParamsTest do
+defmodule CuteFemBotPersistenceIndexSuggestionsParamsTest do
   use ExUnit.Case, async: true
-  alias CuteFemBotWeb.Bridge.IndexSuggestionsParams, as: Params
+  alias CuteFemBot.Persistence.IndexSuggestionsParams, as: Params
 
   describe "from raw query" do
     test "when query is empty" do

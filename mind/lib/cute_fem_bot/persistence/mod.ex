@@ -3,6 +3,9 @@ defmodule CuteFemBot.Persistence do
   alias CuteFemBot.Repo
   alias CuteFemBot.Schema
   alias Schema.Suggestion
+  alias CuteFemBot.Persistence.IndexSuggestionsParams
+  alias CuteFemBot.Core.Pagination.Params, as: PaginationParams
+  alias CuteFemBot.Core.Pagination.Resolved, as: PaginationResolved
   import Ecto.Query
 
   defp term_to_binary(term) do
@@ -192,5 +195,46 @@ defmodule CuteFemBot.Persistence do
     |> Repo.insert_or_update!()
 
     :ok
+  end
+
+  @doc """
+  Indexing suggestions & their users by given params.
+
+  Returned users is that either **made a suggestion** or **made a decision**.
+  """
+  def index_suggestions(%IndexSuggestionsParams{} = params) do
+    query =
+      from(s in Schema.Suggestion,
+        order_by: [desc: s.inserted_at]
+      )
+      |> IndexSuggestionsParams.apply_to_query(params)
+
+    {suggestions, users} =
+      from(s in query,
+        left_join: u in Schema.User,
+        on: s.decision_made_by == u.id or s.made_by == u.id,
+        distinct: true,
+        select: {s, u}
+      )
+      |> Repo.all()
+      |> Enum.unzip()
+
+    # users may be nil & duplicated
+    users =
+      users
+      |> Stream.reject(&is_nil/1)
+      |> Stream.uniq_by(& &1.id)
+      |> Enum.into([])
+
+    # suggestions may be duplicated because of "OR" join
+    suggestions = suggestions |> Stream.uniq_by(& &1.file_id) |> Enum.into([])
+
+    suggestions_count = from(s in query, select: count(s.file_id)) |> Repo.one!()
+
+    %{
+      pagination: params.pagination |> PaginationResolved.from_params(suggestions_count),
+      suggestions: suggestions,
+      users: users
+    }
   end
 end
