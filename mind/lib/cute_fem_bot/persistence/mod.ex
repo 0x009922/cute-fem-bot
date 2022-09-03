@@ -203,11 +203,16 @@ defmodule CuteFemBot.Persistence do
   Returned users is that either **made a suggestion** or **made a decision**.
   """
   def index_suggestions(%IndexSuggestionsParams{} = params) do
+    query_with_only_where =
+      from(s in Schema.Suggestion)
+      |> IndexSuggestionsParams.apply_query_where(params)
+
     query =
-      from(s in Schema.Suggestion,
+      from(s in query_with_only_where,
         order_by: [desc: s.inserted_at]
       )
-      |> IndexSuggestionsParams.apply_to_query(params)
+      |> IndexSuggestionsParams.apply_query_order(params)
+      |> IndexSuggestionsParams.apply_query_pagination(params)
 
     {suggestions, users} =
       from(s in query,
@@ -229,7 +234,7 @@ defmodule CuteFemBot.Persistence do
     # suggestions may be duplicated because of "OR" join
     suggestions = suggestions |> Stream.uniq_by(& &1.file_id) |> Enum.into([])
 
-    suggestions_count = from(s in query, select: count(s.file_id)) |> Repo.one!()
+    suggestions_count = from(s in query_with_only_where, select: count(s.file_id)) |> Repo.one!()
 
     %{
       pagination: params.pagination |> PaginationResolved.from_params(suggestions_count),

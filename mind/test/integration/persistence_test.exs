@@ -294,6 +294,12 @@ defmodule CuteFemBotPersistenceTest do
       assert length(s) == 2
       assert length(u) == 2
     end
+
+    test "when pagination is out of bounds, it returns empty result" do
+      {:ok, params} = IndexSuggestionsParams.from_raw_query(%{page_size: 10, page: 2})
+
+      assert %{pagination: %{total: 5}} = Persistence.index_suggestions(params)
+    end
   end
 
   defp only_file_ids(items) do

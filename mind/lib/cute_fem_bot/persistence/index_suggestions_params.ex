@@ -37,12 +37,20 @@ defmodule CuteFemBot.Persistence.IndexSuggestionsParams do
     end
   end
 
-  def apply_to_query(%Ecto.Query{} = query, %Self{} = self) do
+  def apply_query_where(%Ecto.Query{} = query, %Self{} = self) do
     query
-    |> PaginationParams.apply_to_ecto_query(self.pagination)
     |> query_apply_decision(self)
     |> query_apply_published(self)
+  end
+
+  def apply_query_order(%Ecto.Query{} = query, %Self{} = self) do
+    query
     |> query_apply_order(self)
+  end
+
+  def apply_query_pagination(%Ecto.Query{} = query, %Self{} = self) do
+    query
+    |> PaginationParams.apply_to_ecto_query(self.pagination)
   end
 
   defp query_apply_decision(query, %Self{decision: :whatever}), do: query
