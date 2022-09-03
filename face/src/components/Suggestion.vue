@@ -18,9 +18,9 @@ const suggestionsStore = useSuggestionsStore()
 
 // different data
 
-const data = $computed(() => suggestionsStore.suggestionsMapped!.get(props.fileId)!)
-const typeDefinitely = $computed(() => suggestionsStore.suggestionTypes!.get(props.fileId)!)
-const isPreviewable = $computed(() => typeDefinitely !== 'document')
+const data = $computed(() => suggestionsStore.suggestionsMapped?.get(props.fileId))
+const suggestionType = $computed(() => suggestionsStore.suggestionTypes?.get(props.fileId))
+const isPreviewable = $computed(() => suggestionType !== 'document')
 
 // INTERSECTION
 
@@ -34,11 +34,11 @@ useIntersectionObserver(root, ([{ isIntersecting }]) => {
 // LOADING
 
 const shouldLoad = $computed(() => isVisible && isPreviewable)
-const { resource: fileResource } = useFileSwr(computed(() => (shouldLoad ? props.fileId : null)))
+const fileResource = useFileSwr(computed(() => (shouldLoad ? props.fileId : null)))
 
 const isPending = $computed(() => fileResource.value?.state.pending ?? false)
-const file = $computed(() => fileResource.value?.state.data?.some)
-const error = $computed(() => fileResource.value?.state.error?.some)
+const file = $computed(() => fileResource.value?.state.fulfilled?.value)
+const error = $computed(() => fileResource.value?.state.rejected?.reason)
 
 // PREVIEW
 
@@ -54,6 +54,7 @@ function openPreview() {
 
 <template>
   <div
+    v-if="suggestionType && data"
     ref="root"
     class="min-h-100px shadow rounded relative overflow-hidden flex flex-col"
   >
@@ -65,7 +66,7 @@ function openPreview() {
     <SuggestionPreview
       class="flex-1"
       :error="!!error"
-      :type="typeDefinitely"
+      :type="suggestionType"
       :blob-src="fileBlobSrc"
       :unavailable="fileIsUnavailable"
       @open-preview="openPreview()"

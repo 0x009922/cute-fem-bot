@@ -2,15 +2,16 @@ import { defineStore } from 'pinia'
 import {
   fetchSuggestions,
   FetchSuggestionsParams,
-  FetchSuggestionsResponse,
   SchemaSuggestionType,
   SuggestionDecisionParam,
   SUGGESTION_DECISION_PARAM_VALUES,
 } from '../api'
 import { computeSuggestionType } from '../util'
 import { useAuthStore } from './auth'
-import { useSwr, createAmnesiaStore } from '@vue-swr-composable/core'
 import { useRouteQuery } from '@vueuse/router'
+import invariant from 'tiny-invariant'
+import { useResourcesPool } from '~/util/swr'
+import { ComposedKey } from '@vue-kakuyaku/core'
 
 export const useSuggestionsParamsStore = defineStore('suggestions-params', () => {
   const page = ref(1)
@@ -78,58 +79,64 @@ export const useSuggestionsStore = defineStore('suggestions', () => {
 
   const params = useSuggestionsParamsStore()
 
-  const swrStore = createAmnesiaStore<FetchSuggestionsResponse>()
-  const { resource } = useSwr({
-    fetch: computed(() => {
+  const { useResource, memory } = useResourcesPool<
+    Awaited<ReturnType<typeof fetchSuggestions>>,
+    ComposedKey<string, FetchSuggestionsParams>
+  >(({ payload: params }) => fetchSuggestions(params), {
+    debug: 'suggestions',
+  })
+
+  const resource = useResource(
+    computed(() => {
       if (!auth.key) return null
 
       return {
         key: `${params.page}-${params.published}-${params.decision}`,
-        fn: () => fetchSuggestions(params.pureParams),
+        payload: params.pureParams,
       }
     }),
-    store: swrStore,
-  })
+  )
 
-  const swrKey = $computed(() => resource.value?.key)
-  const data = $computed(() => resource.value?.state.data?.some)
-  const error = $computed(() => resource.value?.state.error?.some)
-  const pending = $computed(() => resource.value?.state.pending ?? false)
+  const data = computed(() => resource.value?.state.fulfilled?.value)
+  const error = computed(() => resource.value?.state.rejected?.reason)
+  const pending = computed(() => resource.value?.state.pending ?? false)
+
+  const pagination = computed(() => data.value?.pagination ?? null)
 
   function mutateAndResetAllOther() {
-    const key = swrKey
-    if (!key) throw new Error('No current key')
+    const res = resource.value
+    invariant(res)
 
-    const currentState = swrStore.get(key)
-    swrStore.storage.clear()
-    swrStore.set(key, currentState)
+    const value = memory.get(res.key.key)
+    memory.clear()
+    value && memory.set(res.key.key, value)
 
-    resource.value!.refresh()
+    res.mutate()
   }
 
-  const suggestions = $computed(() => data?.suggestions)
+  const suggestions = computed(() => data.value?.suggestions)
 
-  const suggestionsMapped = $computed(() => {
-    const items = suggestions
+  const suggestionsMapped = computed(() => {
+    const items = suggestions.value
     if (!items) return null
     return new Map(items.map((x) => [x.file_id, x]))
   })
 
-  const usersList = computed(() => data?.users ?? null)
+  const suggestionTypes = computed<null | Map<string, SchemaSuggestionType>>(() => {
+    const items = suggestions.value
+    if (!items) return null
+    return new Map(items.map((x) => [x.file_id, computeSuggestionType(x.file_type, x.file_mime_type ?? undefined)]))
+  })
+
+  const usersList = computed(() => data.value?.users ?? null)
   const usersMap = computed(() => {
     const list = usersList.value
     if (!list) return null
     return new Map(list.map((x) => [x.id, x]))
   })
 
-  const suggestionTypes = $computed<null | Map<string, SchemaSuggestionType>>(() => {
-    const items = suggestions
-    if (!items) return null
-    return new Map(items.map((x) => [x.file_id, computeSuggestionType(x.file_type, x.file_mime_type ?? undefined)]))
-  })
-
-  return $$({
-    data,
+  return {
+    pagination,
     pending,
     error,
     mutate: mutateAndResetAllOther,
@@ -139,5 +146,5 @@ export const useSuggestionsStore = defineStore('suggestions', () => {
     usersList,
     usersMap,
     suggestionTypes,
-  })
+  }
 })

@@ -4,20 +4,20 @@ import IconPlus from '~icons/ic/round-plus'
 import IconMinus from '~icons/ic/round-minus'
 
 const params = useSuggestionsParamsStore()
-const storePage = $(toRef(params, 'page'))
+const storePage = toRef(params, 'page')
 
-let page = $ref(storePage)
-let pageDebounced = refDebounced($$(page), 300)
+let page = ref(storePage)
+let pageDebounced = refDebounced(page, 300)
 
-syncRef($$(storePage), $$(page))
-syncRef(pageDebounced, $$(storePage))
+syncRef(storePage, page)
+syncRef(pageDebounced, storePage)
 
 function inc() {
-  page++
+  page.value++
 }
 
 function dec() {
-  page--
+  page.value--
 }
 </script>
 

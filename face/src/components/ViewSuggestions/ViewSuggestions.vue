@@ -25,8 +25,6 @@ useParamsRouterSync()
       Ошибка: {{ store.error }}
     </div>
 
-    <div>
-      <SuggestionsList />
-    </div>
+    <SuggestionsList />
   </div>
 </template>

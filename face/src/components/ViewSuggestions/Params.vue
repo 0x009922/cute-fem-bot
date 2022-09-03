@@ -15,7 +15,7 @@ function decisionRu(value: SuggestionDecisionParam) {
 <template>
   <div class="rounded border-2 border-indigo-600 p-4 space-y-4">
     <div class="flex items-center">
-      <h3 class="m-0 flex-1">
+      <h3 class="m-0 flex-1 font-normal">
         Параметры
       </h3>
 

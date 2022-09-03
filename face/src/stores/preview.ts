@@ -9,7 +9,7 @@ export const usePreviewStore = defineStore('preview', () => {
   let fileId = $ref<null | string>(null)
 
   const file = $computed(() => {
-    const file = (fileId && filesStore.inMemory.get(fileId)?.data?.some) || null
+    const file = (fileId && filesStore.getFile(fileId)) || null
     if (!file || isUnavailable(file)) return null
     return file
   })
