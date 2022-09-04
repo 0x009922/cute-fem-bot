@@ -115,11 +115,10 @@ type UseResourceFn<T, K extends UniKey> = <ResK extends K | Ref<K | null>>(
   key: ResK,
 ) => ResK extends Ref<infer ResK> ? Ref<ResK extends K ? UseResourceReturn<T, ResK> : null> : UseResourceReturn<T, K>
 
-export interface UseResourceReturn<T, K extends UniKey> {
+export type UseResourceReturn<T, K extends UniKey> = {
   state: PromiseStaleState<T>
-  key: K
   mutate: () => void
-}
+} & SpreadKey<K>
 
 export function useResourcesPool<T, K extends UniKey>(
   fn: (key: K) => Promise<T>,

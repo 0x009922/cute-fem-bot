@@ -112,9 +112,9 @@ export const useSuggestionsStore = defineStore('suggestions', () => {
     const res = resource.value
     invariant(res)
 
-    const value = memory.get(res.key.key)
+    const value = memory.get(res.key)
     memory.clear()
-    value && memory.set(res.key.key, value)
+    value && memory.set(res.key, value)
 
     res.mutate()
   }
