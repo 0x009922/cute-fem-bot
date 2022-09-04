@@ -74,5 +74,5 @@ export async function fetchFile(fileId: string): Promise<FetchFileResponse | nul
 }
 
 export async function makeDecision(fileId: string, decision: SchemaSuggestionDecision): Promise<void> {
-  await axios.put(`/suggestions/${fileId}/decision`, { decision })
+  await axios.post(`/suggestions/${fileId}/decision`, { decision })
 }
