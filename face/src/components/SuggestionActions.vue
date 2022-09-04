@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useParamScope, useTask, wheneverFulfilled, wheneverRejected } from '@vue-kakuyaku/core'
 import { SchemaSuggestion, SchemaSuggestionDecision, makeDecision } from '~/api'
 import SuggestionCardLine from './SuggestionCardLine.vue'
 
@@ -23,17 +24,42 @@ const OPTIONS: { label: string; value: SchemaSuggestionDecision | null }[] = [
   },
 ]
 
-const { isLoading: isPending, execute: makeDecisionAndUpdateStore } = useAsyncState(
-  async () => {
-    await makeDecision(props.data.file_id, decision!)
-    suggestionsStore.mutate()
+const decision = ref<SchemaSuggestionDecision | null>(props.data.decision)
+
+const scope = useParamScope(
+  computed(() => {
+    const valueInput = decision.value
+    const { decision: valueCurrent, file_id } = props.data
+
+    return (
+      valueInput &&
+      valueInput !== valueCurrent && {
+        key: `${file_id} ${valueInput}`,
+        payload: { file_id, decision: valueInput },
+      }
+    )
+  }),
+  ({ file_id, decision }) => {
+    const { state } = useTask(
+      async () => {
+        await makeDecision(file_id, decision)
+      },
+      { immediate: true },
+    )
+
+    wheneverFulfilled(state, () => {
+      suggestionsStore.mutate()
+    })
+
+    wheneverRejected(state, (reason) => {
+      console.error(reason)
+    })
+
+    return state
   },
-  null,
-  { immediate: false },
 )
 
-let decision = $ref<SchemaSuggestionDecision | null>(props.data.decision)
-whenever<any>(() => decision && decision !== props.data.decision, makeDecisionAndUpdateStore)
+const isPending = computed(() => scope.value?.expose.pending ?? false)
 </script>
 
 <template>

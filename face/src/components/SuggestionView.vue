@@ -91,8 +91,8 @@ function openPreview() {
       </SuggestionCardLine>
 
       <span class="text-xs text-gray-400">
-        Создано: <VFormatDate :iso="data.inserted_at" />
-        <template v-if="data.updated_at"> / Обновлено: <VFormatDate :iso="data.updated_at" /> </template>
+        Создано <VFormatDate :iso="data.inserted_at" />
+        <template v-if="data.updated_at"> / Обновлено <VFormatDate :iso="data.updated_at" /> </template>
       </span>
     </div>
   </div>
