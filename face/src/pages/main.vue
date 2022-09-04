@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { setAuth } from '../api'
-import { useAuthStore } from '../stores/auth'
+import { setAuth } from '~/api'
 
 const router = useRouter()
 const route = useRoute()

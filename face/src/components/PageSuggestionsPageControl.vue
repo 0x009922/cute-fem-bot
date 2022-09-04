@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useSuggestionsParamsStore } from '~/stores/suggestions'
 import IconPlus from '~icons/ic/round-plus'
 import IconMinus from '~icons/ic/round-minus'
 

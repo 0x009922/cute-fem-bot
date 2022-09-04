@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { SuggestionDecisionParam, SUGGESTION_DECISION_PARAM_VALUES } from '~/api'
 import { SUGGESTION_DECISION_PARAM_RU } from '~/const'
-import { useSuggestionsParamsStore, useSuggestionsStore } from '~/stores/suggestions'
-import SuggestionsPageControl from './SuggestionsPageControl.vue'
+import PageSuggestionsPageControl from './PageSuggestionsPageControl.vue'
 
 const paramsStore = useSuggestionsParamsStore()
 const suggestionsStore = useSuggestionsStore()
@@ -51,7 +50,7 @@ function decisionRu(value: SuggestionDecisionParam) {
         </div>
       </div>
 
-      <SuggestionsPageControl />
+      <PageSuggestionsPageControl />
     </div>
   </div>
 </template>

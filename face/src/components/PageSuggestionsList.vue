@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { useSuggestionsStore } from '~/stores/suggestions'
-import Suggestion from '../Suggestion.vue'
-import User from '../User.vue'
-import DontWatch from '~/assets/dont-watch.avif'
+import SuggestionView from './SuggestionView.vue'
+import UserView from './UserView.vue'
+import imgDontWatch from '~/assets/dont-watch.avif'
 import { storeToRefs } from 'pinia'
 
 const suggestionsStore = useSuggestionsStore()
-
 const { pagination, suggestions: items } = storeToRefs(suggestionsStore)
 </script>
 
@@ -29,7 +27,7 @@ const { pagination, suggestions: items } = storeToRefs(suggestionsStore)
       v-if="items.length"
       class="grid sm:grid-cols-2 gap-4 py-4"
     >
-      <Suggestion
+      <SuggestionView
         v-for="item in items"
         :key="item.file_id"
         :file-id="item.file_id"
@@ -38,9 +36,9 @@ const { pagination, suggestions: items } = storeToRefs(suggestionsStore)
           v-if="suggestionsStore.usersMap"
           #user
         >
-          <User :data="suggestionsStore.usersMap!.get(item.made_by)!" />
+          <UserView :data="suggestionsStore.usersMap!.get(item.made_by)!" />
         </template>
-      </Suggestion>
+      </SuggestionView>
     </div>
 
     <div
@@ -48,7 +46,7 @@ const { pagination, suggestions: items } = storeToRefs(suggestionsStore)
       class="px-16 pt-4 text-center space-y-4"
     >
       <img
-        :src="DontWatch"
+        :src="imgDontWatch"
         class="w-full"
       >
 

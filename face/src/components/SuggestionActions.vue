@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { SchemaSuggestion, SchemaSuggestionDecision, makeDecision } from '../api'
-import { useSuggestionsStore } from '../stores/suggestions'
+import { SchemaSuggestion, SchemaSuggestionDecision, makeDecision } from '~/api'
 import SuggestionCardLine from './SuggestionCardLine.vue'
 
 const props = defineProps<{

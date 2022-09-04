@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { useSuggestionsStore, useParamsRouterSync } from '~/stores/suggestions'
-import SuggestionsList from './SuggestionsList.vue'
-import Params from './Params.vue'
-import Spinner from '../Spinner.vue'
+import VSpinner from '~/components/VSpinner.vue'
+import PageSuggestionsParams from '~/components/PageSuggestionsParams.vue'
+import PageSuggestionsList from '~/components/PageSuggestionsList.vue'
 
 const store = useSuggestionsStore()
 useParamsRouterSync()
@@ -12,11 +11,11 @@ useParamsRouterSync()
   <h2 class="flex items-center space-x-4">
     <span> Предложка </span>
 
-    <Spinner v-if="store.pending" />
+    <VSpinner v-if="store.pending" />
   </h2>
 
   <div class="space-y-4">
-    <Params />
+    <PageSuggestionsParams />
 
     <div
       v-if="store.error"
@@ -25,6 +24,6 @@ useParamsRouterSync()
       Ошибка: {{ store.error }}
     </div>
 
-    <SuggestionsList />
+    <PageSuggestionsList />
   </div>
 </template>

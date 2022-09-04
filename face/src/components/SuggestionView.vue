@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { isUnavailable, useFileSwr } from '../stores/files'
 import SuggestionActions from './SuggestionActions.vue'
 import SuggestionPreview from './SuggestionPreview.vue'
-import FormatDate from './FormatDate.vue'
-import { usePreviewStore } from '../stores/preview'
-import { useSuggestionsStore } from '../stores/suggestions'
-import Spinner from './Spinner.vue'
 import SuggestionCardLine from './SuggestionCardLine.vue'
+import VFormatDate from './VFormatDate.vue'
+import VSpinner from './VSpinner.vue'
 
 interface Props {
   fileId: string
@@ -58,7 +55,7 @@ function openPreview() {
     ref="root"
     class="min-h-100px shadow rounded relative overflow-hidden flex flex-col"
   >
-    <Spinner
+    <VSpinner
       v-if="isPending"
       class="absolute right-0 top-0 m-2 z-50"
     />
@@ -94,8 +91,8 @@ function openPreview() {
       </SuggestionCardLine>
 
       <span class="text-xs">
-        <FormatDate :iso="data.inserted_at" />
-        <template v-if="data.updated_at"> / <FormatDate :iso="data.updated_at" /> </template>
+        <VFormatDate :iso="data.inserted_at" />
+        <template v-if="data.updated_at"> / <VFormatDate :iso="data.updated_at" /> </template>
       </span>
     </div>
   </div>
