@@ -44,7 +44,6 @@ whenever<any>(() => decision && decision !== props.data.decision, makeDecisionAn
     <template #content>
       <select
         v-model="decision"
-        class="mt-2"
         :disabled="isPending"
       >
         <option

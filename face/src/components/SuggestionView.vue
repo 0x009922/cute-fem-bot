@@ -69,7 +69,7 @@ function openPreview() {
       @open-preview="openPreview()"
     />
 
-    <div class="grid gap-4 p-4 text-sm">
+    <div class="grid gap-3 p-4 text-sm">
       <SuggestionCardLine>
         <template #title>
           Опубликовано?
@@ -90,9 +90,9 @@ function openPreview() {
         </template>
       </SuggestionCardLine>
 
-      <span class="text-xs">
-        <VFormatDate :iso="data.inserted_at" />
-        <template v-if="data.updated_at"> / <VFormatDate :iso="data.updated_at" /> </template>
+      <span class="text-xs text-gray-400">
+        Создано: <VFormatDate :iso="data.inserted_at" />
+        <template v-if="data.updated_at"> / Обновлено: <VFormatDate :iso="data.updated_at" /> </template>
       </span>
     </div>
   </div>
