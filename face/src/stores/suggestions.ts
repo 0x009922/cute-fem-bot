@@ -1,11 +1,5 @@
-import { defineStore } from 'pinia'
-import {
-  fetchSuggestions,
-  FetchSuggestionsParams,
-  SchemaSuggestionType,
-  SuggestionDecisionParam,
-  SUGGESTION_DECISION_PARAM_VALUES,
-} from '../api'
+import { defineStore, storeToRefs } from 'pinia'
+import { fetchSuggestions, FetchSuggestionsParams, SchemaSuggestionType, SuggestionDecisionParam } from '../api'
 import { computeSuggestionType } from '../util'
 import { useAuthStore } from './auth'
 import { useRouteQuery } from '@vueuse/router'
@@ -31,9 +25,9 @@ export const useSuggestionsParamsStore = defineStore('suggestions-params', () =>
 })
 
 export function useParamsRouterSync() {
-  const storeParams = toRefs(useSuggestionsParamsStore())
+  const storeParams = storeToRefs(useSuggestionsParamsStore())
 
-  let routePage = useRouteQuery<string>('p', '1')
+  const routePage = useRouteQuery<string>('p', '1')
   const routePageNum = computed({
     get: () => parseInt(routePage.value, 10),
     set: (v) => {
@@ -42,33 +36,20 @@ export function useParamsRouterSync() {
   })
   syncRef(routePageNum, storeParams.page)
 
-  let routeDecision = useRouteQuery('decision')
-  let routeDecisionFiltered = computed<SuggestionDecisionParam>({
-    get: () => {
-      const value = routeDecision
-      if (typeof value === 'string' && SUGGESTION_DECISION_PARAM_VALUES.includes(value as SuggestionDecisionParam)) {
-        return value as SuggestionDecisionParam
-      }
-      return 'whatever'
-    },
-    set: (v) => {
-      routeDecision.value = v
-    },
-  })
-  syncRef(routeDecisionFiltered, storeParams.decision)
+  const routeDecision = useRouteQuery<SuggestionDecisionParam>('decision', 'whatever')
+  syncRef(routeDecision, storeParams.decision)
 
-  let routePublished = useRouteQuery('published')
-  let routePublishedFiltered = computed<boolean>({
+  type TrueFalseStr = 'true' | 'false'
+
+  const routePublished = useRouteQuery<TrueFalseStr>('published', 'false')
+
+  const routePublishedFiltered = computed<boolean>({
     get: () => {
-      const value = routePublished
-      if (typeof value === 'string') {
-        if (value === 'true') return true
-        if (value === 'false') return false
-      }
-      return false
+      const value: TrueFalseStr = routePublished.value
+      return value === 'true'
     },
     set: (v) => {
-      routePublished.value = String(v)
+      routePublished.value = String(v) as TrueFalseStr
     },
   })
   syncRef(routePublishedFiltered, storeParams.published)
