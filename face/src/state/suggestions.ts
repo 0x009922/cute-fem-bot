@@ -1,5 +1,5 @@
 import { defineStore, storeToRefs } from 'pinia'
-import { fetchSuggestions, FetchSuggestionsParams, SchemaSuggestionType, SuggestionDecisionParam } from '~/api'
+import { fetchSuggestions, FetchSuggestionsParams, SchemaSuggestionType, SuggestionDecisionParam, Order } from '~/api'
 import { computeSuggestionType } from '~/util'
 import { useRouteQuery } from '@vueuse/router'
 import invariant from 'tiny-invariant'
@@ -10,6 +10,7 @@ export const useSuggestionsParamsStore = defineStore('suggestions-params', () =>
   const page = ref(1)
   const published = ref(true)
   const decision = ref<SuggestionDecisionParam>('whatever')
+  const orderByDecisionDate = ref<'none' | Order>('none')
 
   /**
    * Pure data
@@ -18,13 +19,19 @@ export const useSuggestionsParamsStore = defineStore('suggestions-params', () =>
     page,
     published,
     decision,
+    order_by_decision_date: computed(() => {
+      const value = orderByDecisionDate.value
+      return value === 'none' ? null : value
+    }),
   })
 
-  return { page, published, decision, pureParams }
+  return { page, published, decision, orderByDecisionDate, pureParams }
 })
 
 export function useParamsRouterSync() {
   const storeParams = storeToRefs(useSuggestionsParamsStore())
+
+  // #region page
 
   const routePage = useRouteQuery<string>('p', '1')
   const routePageNum = computed({
@@ -33,15 +40,23 @@ export function useParamsRouterSync() {
       routePage.value = String(v)
     },
   })
+
   syncRef(routePageNum, storeParams.page)
+
+  // #endregion
+
+  // #region decision
 
   const routeDecision = useRouteQuery<SuggestionDecisionParam>('decision', 'whatever')
   syncRef(routeDecision, storeParams.decision)
 
+  // #endregion
+
+  // #region published
+
   type TrueFalseStr = 'true' | 'false'
 
   const routePublished = useRouteQuery<TrueFalseStr>('published', 'false')
-
   const routePublishedFiltered = computed<boolean>({
     get: () => {
       const value: TrueFalseStr = routePublished.value
@@ -51,7 +66,17 @@ export function useParamsRouterSync() {
       routePublished.value = String(v) as TrueFalseStr
     },
   })
+
   syncRef(routePublishedFiltered, storeParams.published)
+
+  // #endregion
+
+  // #region order by decision date
+
+  const routeOrder = useRouteQuery<'none' | Order>('order_by_decision_date', 'none')
+  syncRef(routeOrder, storeParams.orderByDecisionDate)
+
+  // #endregion
 }
 
 export const useSuggestionsStore = defineStore('suggestions', () => {
@@ -71,7 +96,7 @@ export const useSuggestionsStore = defineStore('suggestions', () => {
       if (!auth.key) return null
 
       return {
-        key: `${params.page}-${params.published}-${params.decision}`,
+        key: `${params.page}-${params.published}-${params.decision}-${params.orderByDecisionDate ?? 'none'}`,
         payload: params.pureParams,
       }
     }),

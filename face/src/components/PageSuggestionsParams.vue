@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import { SuggestionDecisionParam, SUGGESTION_DECISION_PARAM_VALUES } from '~/api'
-import { SUGGESTION_DECISION_PARAM_RU } from '~/const'
-import PageSuggestionsPageControl from './PageSuggestionsPageControl.vue'
+import PageSuggestionsParamsPage from './PageSuggestionsParamsPage.vue'
+import PageSuggestionsParamsDecision from './PageSuggestionsParamsDecision.vue'
+import PageSuggestionsParamsOrder from './PageSuggestionsParamsOrder.vue'
 
 const paramsStore = useSuggestionsParamsStore()
 const suggestionsStore = useSuggestionsStore()
-
-function decisionRu(value: SuggestionDecisionParam) {
-  return SUGGESTION_DECISION_PARAM_RU[value]
-}
 </script>
 
 <template>
@@ -22,35 +18,22 @@ function decisionRu(value: SuggestionDecisionParam) {
         Обновить
       </button>
     </div>
-    <div class="grid gap-2 grid-cols-2">
-      <div class="grid gap-2">
-        <div class="">
-          <label for="decision-select"> Решение: </label>
-          <select
-            id="decision-select"
-            v-model="paramsStore.decision"
-          >
-            <option
-              v-for="x in SUGGESTION_DECISION_PARAM_VALUES"
-              :key="x"
-              :value="x"
-            >
-              {{ decisionRu(x) }}
-            </option>
-          </select>
-        </div>
 
-        <div>
-          <input
-            id="published-checkbox"
-            v-model="paramsStore.published"
-            type="checkbox"
-          >
-          <label for="published-checkbox"> Опубликовано </label>
-        </div>
+    <div class="grid gap-2 grid-cols-2">
+      <PageSuggestionsParamsDecision />
+
+      <div class="border border-indigo-300 rounded p-1">
+        <input
+          id="published-checkbox"
+          v-model="paramsStore.published"
+          type="checkbox"
+        >
+        <label for="published-checkbox"> Опубликовано </label>
       </div>
 
-      <PageSuggestionsPageControl />
+      <PageSuggestionsParamsPage />
+
+      <PageSuggestionsParamsOrder />
     </div>
   </div>
 </template>
