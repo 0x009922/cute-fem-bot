@@ -7,18 +7,6 @@ defmodule CuteFemBot.Application do
 
   @impl true
   def start(_type, _args) do
-    cfg =
-      case CuteFemBot.Config.read_cfg() do
-        {:ok, %CuteFemBot.Config{} = cfg} ->
-          Logger.debug("Loaded config: #{inspect(cfg)}")
-          cfg
-
-        {:error, err} ->
-          fatal_exit("Unable to read config: #{inspect(err)}")
-      end
-
-    {:ok, cfg_ref} = CuteFemBot.Config.State.init(cfg)
-
     handle_update_fun = fn update ->
       CuteFemBot.Logic.Handler.handle(CuteFemBot.Logic.Handler, update)
     end
@@ -29,21 +17,16 @@ defmodule CuteFemBot.Application do
     bridge_cache = CuteFemBot.Server.Bridge.Cachex
 
     children = [
+      CuteFemBot.Config.State,
       CuteFemBot.Repo,
       {web_auth, name: web_auth},
       CuteFemBotWeb.Endpoint,
       {Cachex, name: bridge_cache, limit: 100},
       {
         CuteFemBotWeb.Bridge,
-        telegram: telegram, config: cfg_ref, finch: finch, cache: bridge_cache, web_auth: web_auth
+        telegram: telegram, finch: finch, cache: bridge_cache, web_auth: web_auth
       },
-      # {
-      #   Task,
-      #   fn ->
-      #     {:ok, key, _} = CuteFemBot.Logic.WebAuth.create_key(web_auth, 333)
-      #     Logger.debug("Debug key: #{key}")
-      #   end
-      # }
+      # dev_spec_once_web_auth_create_key(web_auth),
       {
         Finch,
         name: CuteFemBot.Finch
@@ -53,22 +36,20 @@ defmodule CuteFemBot.Application do
         name: telegram,
         config: %Telegram.Api.Config{
           finch: finch,
-          token: cfg.api_token
+          token: fn -> CuteFemBot.Config.State.lookup!().api_token end
         }
       },
       {
         CuteFemBot.Logic.Stats,
         deps: %{
-          telegram: telegram,
-          cfg: cfg_ref
+          telegram: telegram
         }
       },
       {
         CuteFemBot.Logic.Handler,
         name: CuteFemBot.Logic.Handler,
         deps: %{
-          api: telegram,
-          config: cfg_ref,
+          telegram: telegram,
           posting: CuteFemBot.Logic.Posting,
           web_auth: web_auth
         }
@@ -77,60 +58,41 @@ defmodule CuteFemBot.Application do
         CuteFemBot.Logic.Posting,
         name: CuteFemBot.Logic.Posting,
         deps: %{
-          api: telegram,
-          config: cfg_ref
+          api: telegram
         }
       },
       {
         CuteFemBot.Logic.Tasks.SetCommands,
         deps: %{
-          api: telegram,
-          config: cfg_ref
+          api: telegram
         }
       },
-      updater_spec(%{
-        api: telegram,
-        config: cfg_ref,
-        handler_fun: handle_update_fun
-      })
+      {
+        Telegram.Updater,
+        [
+          :long_polling,
+          api: telegram,
+          handler_fun: handle_update_fun,
+          interval: fn -> CuteFemBot.Config.State.lookup!().long_polling_interval end
+        ]
+      }
     ]
 
     opts = [strategy: :one_for_one, name: CuteFemBot.Supervisor]
     Supervisor.start_link(children, opts)
   end
 
-  defp updater_spec(%{api: api, config: cfg_ref, handler_fun: handler}) do
-    %CuteFemBot.Config{long_polling_interval: lp_interval, updates_approach: approach} =
-      CuteFemBot.Config.State.lookup!(cfg_ref)
+  # defp dev_spec_once_web_auth_create_key(web_auth) do
+  #   {
+  #     Task,
+  #     fn ->
+  #       {:ok, key, _} = CuteFemBotWeb.Auth.create_key(web_auth, 333)
+  #       Logger.debug("Debug key: #{key}")
+  #     end
+  #   }
+  # end
 
-    case approach do
-      :long_polling ->
-        {
-          Telegram.Updater,
-          [
-            :long_polling,
-            interval: lp_interval,
-            handler_fun: handler,
-            api: api
-          ]
-        }
-
-      :webhook ->
-        {
-          Telegram.Updater,
-          [
-            :webhook,
-            deps: %{
-              api: api,
-              config: cfg_ref
-            },
-            handler_fun: handler
-          ]
-        }
-    end
-  end
-
-  defp fatal_exit(message) do
-    Logger.emergency(message)
-  end
+  # defp fatal_exit(message) do
+  #   Logger.emergency(message)
+  # end
 end

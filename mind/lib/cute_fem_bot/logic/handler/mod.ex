@@ -1,8 +1,9 @@
 defmodule CuteFemBot.Logic.Handler do
   use GenServer
 
-  alias __MODULE__.Entry
-  alias __MODULE__.Ctx
+  alias CuteFemBot.Logic.Handler, as: Self
+  # alias __MODULE__.Entry
+  # alias __MODULE__.Ctx
   alias Telegram.Api
   alias Telegram.Types.Message
 
@@ -27,12 +28,17 @@ defmodule CuteFemBot.Logic.Handler do
 
   @impl true
   def handle_cast({:handle_update, update}, state) do
-    case CtxHandler.handle(Entry, Ctx.new(state.deps, update)) do
+    init_ctx =
+      Traffic.Context.new()
+      |> Self.Context.put_raw_update(update)
+      |> Self.Context.put_deps(state.deps)
+
+    case Traffic.run(init_ctx, [Self.Entry]) do
       {:ok, _} ->
         nil
 
-      {:error, :raised, err, trace, handler_state} ->
-        handle_error(state.deps, handler_state, err, trace)
+      {:error, any_error} ->
+        handle_error(state.deps, any_error)
     end
 
     {:noreply, state}
@@ -42,35 +48,33 @@ defmodule CuteFemBot.Logic.Handler do
     GenServer.cast(handler, {:handle_update, update})
   end
 
-  defp handle_error(deps, %CtxHandler.State{} = state, err, trace) do
-    err_formatted = Exception.format(:error, err, trace)
-    err_formatted_escaped = err_formatted |> CuteFemBot.Util.escape_html()
-    state_path_formatted = inspect(state.path)
-    Logger.error("Error during update handling: #{err_formatted} | path: #{state_path_formatted}")
+  defp handle_error(deps, any_error) do
+    case any_error do
+      {:raised, err, trace, ctx} ->
+        formatted = Exception.format(:error, err, trace)
+        Logger.error("Raised error: #{formatted}\n\nContext: #{inspect(ctx, pretty: true)}")
 
-    inspect_data =
-      inspect(
-        %{
-          state_path: state.path
-        },
-        pretty: true,
-        syntax_colors: []
-      )
+      err ->
+        formatted = inspect(err, pretty: true)
+        Logger.error("Handler error: #{formatted}")
+    end
+
+    err_inspect_telegram =
+      inspect(any_error, pretty: true, syntax_colors: [], limit: 10)
       |> CuteFemBot.Util.escape_html()
+      |> String.slice(0..4000)
 
     text = """
     Хозяин, у меня ошибка во время обработки апдейта.
 
-    Ошибка: <pre>#{err_formatted_escaped}</pre>
-
-    <pre><code class=\"language-elixir\">#{inspect_data}</code></pre>
+    Ошибка: <pre>#{err_inspect_telegram}</pre>
     """
 
-    %CuteFemBot.Config{master: chat_id} = CuteFemBot.Config.State.lookup!(deps.config)
+    %CuteFemBot.Config{master: chat_id} = CuteFemBot.Config.State.lookup!()
 
     {:ok, _} =
       Api.send_message(
-        deps.api,
+        deps.telegram,
         Message.with_text(text) |> Message.set_chat_id(chat_id) |> Message.set_parse_mode("html")
       )
   end

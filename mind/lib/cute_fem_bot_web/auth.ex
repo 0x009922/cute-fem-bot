@@ -7,6 +7,10 @@ defmodule CuteFemBotWeb.Auth do
   use GenServer
   require Logger
 
+  @type auth_data() :: {user_id(), expires_at()}
+  @type user_id() :: pos_integer()
+  @type expires_at() :: DateTime.t()
+
   def start_link(opts) do
     GenServer.start_link(__MODULE__, Keyword.fetch!(opts, :name), opts)
   end
@@ -15,6 +19,7 @@ defmodule CuteFemBotWeb.Auth do
     GenServer.call(name, {:create, user_id, ttl})
   end
 
+  @spec lookup(any(), binary()) :: nil | auth_data()
   def lookup(name, key) do
     case :ets.match(name, {:"$1", key, :"$2"}) do
       [] -> nil

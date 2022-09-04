@@ -1,4 +1,8 @@
 defmodule CuteFemBot.Logic.Speaking do
+  @moduledoc """
+  Set of consts and localizations used to speak with **suggestors**, primarily.
+  """
+
   def sticker_ignore() do
     [
       "CAACAgIAAxkBAAIEf2HahzwrLKXmtolHntgHJ1ZdMWGYAAKCHAAC4KOCB_nVJkUHUFHyIwQ",
@@ -61,6 +65,6 @@ defmodule CuteFemBot.Logic.Speaking do
   end
 
   def cmd_description_help(_) do
-    "Get help about how to use me"
+    "Get help about how to (ab)use me"
   end
 end

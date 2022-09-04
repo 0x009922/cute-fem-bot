@@ -1,95 +1,48 @@
 defmodule CuteFemBot.Logic.Handler.Entry do
   require Logger
-
+  use Traffic.Builder
   alias CuteFemBot.Logic.Handler
-  alias Handler.Ctx
+  alias Handler.Context
   alias CuteFemBot.Persistence
 
-  def main() do
-    [
-      :fetch_config,
-      :parse_update,
-      :ignore_unknown,
-      :update_user_meta,
-      :router,
-      :finalize
-    ]
-  end
+  over(:fetch_config)
+  over(:parse_update)
+  over(:ignore_unknown)
+  over(:update_user_meta)
+  over(:router)
+  over(fn x -> halt(x) end)
 
   def fetch_config(ctx) do
-    {:cont, Ctx.fetch_config(ctx)}
-    # :halt
+    state = CuteFemBot.Config.State.lookup!()
+    Context.put_config(ctx, state)
   end
 
   def parse_update(ctx) do
-    result =
-      case ctx.update do
-        %{
-          "message" =>
-            %{
-              "chat" => chat,
-              "from" => user
-            } = msg
-        } ->
-          {{:message, msg}, {chat, user}}
-
-        %{
-          "callback_query" =>
-            %{
-              "message" => %{
-                "chat" => chat
-              },
-              "from" => user
-            } = query
-        } ->
-          {{:callback_query, query}, {chat, user}}
-
-        unknown ->
-          {:unknown, unknown}
-      end
-
-    case result do
-      {update, {chat, user}} ->
-        {:cont,
-         Map.put(ctx, :update, update)
-         |> Map.put(:source, %{
-           chat: chat,
-           user: user,
-           lang: Map.get(user, "language_code")
-         })}
-
-      {:unknown, _} = unknown ->
-        {:cont, Map.put(ctx, :update, unknown)}
-    end
+    ctx
+    |> Context.parse_raw_update()
   end
 
   def ignore_unknown(ctx) do
-    case ctx.update do
-      {:unknown, update} ->
-        keys = Map.keys(update) |> Enum.filter(fn x -> x != "update_id" end)
-        Logger.info("Update with keys #{keys} is ignored")
-        :halt
-
-      _ ->
-        :cont
+    case Context.get_parsed_update!(ctx) do
+      :unknown -> halt(ctx)
+      _ -> ctx
     end
   end
 
   def update_user_meta(ctx) do
-    Persistence.update_user_meta(ctx.source.user)
-    :cont
+    user = Context.get_update_source!(ctx, :user)
+    Persistence.update_user_meta(user)
+    ctx
   end
 
   def router(ctx) do
-    %{
-      user: %{"id" => user_id},
-      chat: %{"id" => chat_id, "type" => chat_type}
-    } = ctx.source
+    %{"id" => user_id} = Context.get_update_source!(ctx, :user)
+    %{"id" => chat_id, "type" => chat_type} = Context.get_update_source!(ctx, :chat)
 
     %CuteFemBot.Config{
       admins: admins,
       suggestions_chat: suggestions_chat
-    } = Ctx.get_config(ctx)
+    } = Context.get_config!(ctx)
 
     scope =
       cond do
@@ -100,15 +53,10 @@ defmodule CuteFemBot.Logic.Handler.Entry do
       end
 
     case scope do
-      :admin -> {:cont, :sub_mod, Handler.Admin, ctx}
-      :suggestions_admin -> {:cont, :sub_mod, Handler.SuggestionsAdmin, ctx}
-      :suggestions -> {:cont, :sub_mod, Handler.Suggestions, ctx}
-      :confusing -> :cont
+      :admin -> Traffic.move_on(ctx, [Handler.Admin])
+      :suggestions_admin -> Traffic.move_on(ctx, [Handler.SuggestionsAdmin])
+      :suggestions -> Traffic.move_on(ctx, [Handler.Suggestions])
+      :confusing -> ctx
     end
-  end
-
-  def finalize(_ctx) do
-    # TODO log and answer pending callback query
-    :halt
   end
 end

@@ -14,7 +14,9 @@ export default defineConfig({
     uno(),
     AutoImport({
       imports: ['vue', '@vueuse/core', 'vue-router'],
+      dirs: ['src/state'],
       eslintrc: { enabled: true },
+      dts: 'src/auto-imports.d.ts',
     }),
     Icons(),
   ],

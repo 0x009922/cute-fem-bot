@@ -7,10 +7,11 @@
 ## Тесты
 
 ```bash
-MIX_ENV=test mix test --no-start
-```
+mix test_unit
 
-> Важно указать `MIX_ENV=test`, чтобы сработала подготовка **тестовой** БД.
+# запуск тестов, затрагивающих БД
+mix test_integration
+```
 
 ## Деплой
 

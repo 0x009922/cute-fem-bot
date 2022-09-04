@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SchemaSuggestionType } from '../api'
+import { SchemaSuggestionType } from '~/api'
 import IconVideo from '~icons/ic/round-video-camera-back'
 import IconPhoto from '~icons/ic/round-photo'
 import IconDoc from '~icons/mdi/file-document'

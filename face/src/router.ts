@@ -6,12 +6,12 @@ export default createRouter({
     {
       name: 'main',
       path: '/:key?',
-      component: () => import('./components/ViewMain.vue'),
+      component: () => import('./pages/main.vue'),
       children: [
         {
           name: 'suggestions',
           path: 'suggestions',
-          component: () => import('./components/ViewSuggestions/ViewSuggestions.vue'),
+          component: () => import('./pages/suggestions.vue'),
         },
       ],
     },

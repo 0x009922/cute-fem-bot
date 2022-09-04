@@ -37,8 +37,16 @@ defmodule Telegram.Updater.LongPolling.Poller do
           state
       end
 
-    Process.sleep(cfg.interval)
+    sleep_with_interval(cfg.interval)
     poll_loop(cfg, state)
+  end
+
+  defp sleep_with_interval(x) when is_integer(x) do
+    Process.sleep(x)
+  end
+
+  defp sleep_with_interval(x) when is_function(x) do
+    sleep_with_interval(x.())
   end
 
   defp compute_offset(nil), do: nil

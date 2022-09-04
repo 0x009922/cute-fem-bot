@@ -2,7 +2,7 @@ defmodule CuteFemBot.Logic.Posting do
   use GenServer
   require Logger
 
-  alias CuteFemBot.Core.Suggestion
+  alias CuteFemBot.Schema.Suggestion
 
   def start_link(opts) do
     {deps, opts} = Keyword.pop!(opts, :deps)
@@ -11,7 +11,7 @@ defmodule CuteFemBot.Logic.Posting do
   end
 
   @impl true
-  def init(%{config: _, api: _} = deps) do
+  def init(%{api: _} = deps) do
     schedule_posting(0)
 
     {:ok, %{deps: deps, key: 0}}
@@ -40,13 +40,13 @@ defmodule CuteFemBot.Logic.Posting do
         |> Enum.take(flush_count)
 
       # file_ids = queue |> Enum.map(fn {_ty, file_id} -> file_id end)
-      %CuteFemBot.Config{posting_chat: chat_id} = CuteFemBot.Config.State.lookup!(deps.config)
+      %CuteFemBot.Config{posting_chat: chat_id} = CuteFemBot.Config.State.lookup!()
 
       Logger.debug("Posting files: #{inspect(queue)}")
 
       queue
-      |> Enum.each(fn %Suggestion{file_id: file_id, user_id: _user_id} = suggestion ->
-        %{method_name: method, body_part: body_part} = Suggestion.to_send(suggestion)
+      |> Enum.each(fn %Suggestion{file_id: file_id} = suggestion ->
+        %{method_name: method, body_part: body_part} = Suggestion.to_telegram_send(suggestion)
 
         # user = CuteFemBot.Logic.Util.user_html_link_using_meta(deps.persistence, user_id)
         # caption = "Предложка: #{user}"

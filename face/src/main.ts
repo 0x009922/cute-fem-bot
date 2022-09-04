@@ -1,3 +1,5 @@
+localStorage.debug = '*'
+
 import 'uno.css'
 
 import { createApp } from 'vue'

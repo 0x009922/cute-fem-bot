@@ -2,7 +2,6 @@ defmodule CuteFemBotWeb.Bridge do
   alias CuteFemBot.Repo
   alias CuteFemBot.Schema
   alias Telegram.Api
-  alias CuteFemBotWeb.Bridge.IndexSuggestionsParams
   import Ecto.Query
   require Logger
   use GenServer
@@ -17,43 +16,21 @@ defmodule CuteFemBotWeb.Bridge do
     GenServer.call(__MODULE__, {:get_file, file_id}, 300_000)
   end
 
-  def index_suggestions(%IndexSuggestionsParams{} = params) do
-    query =
-      from(s in Schema.Suggestion,
-        order_by: [desc: s.inserted_at]
-      )
-      |> IndexSuggestionsParams.apply_to_query(params)
+  @spec make_suggestion_decision(binary(), :sfw | :nsfw | :reject, pos_integer()) ::
+          :ok | {:error, any()}
+  def make_suggestion_decision(file_id, decision, made_by) do
+    case CuteFemBot.Persistence.make_decision(file_id, made_by, DateTime.utc_now(), decision) do
+      :ok ->
+        :ok
 
-    query =
-      from(s in query,
-        join: u in Schema.User,
-        on: s.suggestor_id == u.id,
-        select: {s, u}
-      )
+      {:error, kind} ->
+        msg =
+          case kind do
+            :not_found -> "Suggestion not found"
+            :published -> "Suggestion is already published"
+          end
 
-    {suggestions, users} =
-      Repo.all(query)
-      |> Enum.unzip()
-
-    %{
-      pagination: params.pagination,
-      suggestions: suggestions,
-      users:
-        Stream.uniq_by(users, fn %{id: id} -> id end)
-        |> Enum.map(fn %Schema.User{} = user ->
-          %{
-            id: user.id,
-            banned: user.banned,
-            meta: Schema.User.decode_meta(user)
-          }
-        end)
-    }
-  end
-
-  def update_suggestion(file_id, params) do
-    with {:ok, %Schema.Suggestion{} = item} <- find_suggestion(file_id),
-         {:ok, _} <- update_suggestion_with_formatting(item, params) do
-      :ok
+        {:error, msg}
     end
   end
 
@@ -66,34 +43,6 @@ defmodule CuteFemBotWeb.Bridge do
     [www]
   end
 
-  defp find_suggestion(file_id) do
-    case Repo.one(from(s in Schema.Suggestion, where: s.file_id == ^file_id)) do
-      nil -> {:error, "Suggestion not found"}
-      x -> {:ok, x}
-    end
-  end
-
-  defp update_suggestion_with_formatting(item, params) do
-    case item |> Schema.Suggestion.changeset_web(params) |> Repo.update() do
-      {:ok, _} = x -> x
-      {:error, changeset} -> {:error, format_changeset_errors(changeset)}
-    end
-  end
-
-  defp format_changeset_errors(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-      Regex.replace(~r"%{(\w+)}", msg, fn _, key ->
-        opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
-      end)
-    end)
-    |> Map.to_list()
-    |> Stream.map(fn {key, errors} ->
-      errors = Enum.join(errors, "; ")
-      "#{key}: #{errors}"
-    end)
-    |> Enum.join("; ")
-  end
-
   # Server callbacks
 
   @impl true
@@ -102,7 +51,6 @@ defmodule CuteFemBotWeb.Bridge do
      %{
        telegram: Keyword.fetch!(opts, :telegram),
        finch: Keyword.fetch!(opts, :finch),
-       config: Keyword.fetch!(opts, :config),
        cache: Keyword.fetch!(opts, :cache),
        web_auth: Keyword.fetch!(opts, :web_auth)
      }}
@@ -120,8 +68,8 @@ defmodule CuteFemBotWeb.Bridge do
   end
 
   @impl true
-  def handle_call(:get_cors, _, %{config: cfg} = state) do
-    %CuteFemBot.Config{www_path: www} = CuteFemBot.Config.State.lookup!(cfg)
+  def handle_call(:get_cors, _, state) do
+    %CuteFemBot.Config{www_path: www} = CuteFemBot.Config.State.lookup!()
 
     {:reply, %{www: www}, state}
   end
@@ -144,7 +92,6 @@ defmodule CuteFemBotWeb.Bridge do
   defp try_get_file_response(
          %{
            telegram: tg,
-           config: cfg,
            finch: finch,
            cache: cache
          },
@@ -161,7 +108,7 @@ defmodule CuteFemBotWeb.Bridge do
 
       :error ->
         with {:ok, path} <- get_file_download_path_from_telegram(tg, file_id),
-             %CuteFemBot.Config{api_token: token} = CuteFemBot.Config.State.lookup!(cfg),
+             %CuteFemBot.Config{api_token: token} = CuteFemBot.Config.State.lookup!(),
              url = Telegram.Util.href_file(token, path),
              {:ok, %Finch.Response{} = resp} <- download_file(finch, url) do
           put_file_into_cache(cache, file_id, resp)

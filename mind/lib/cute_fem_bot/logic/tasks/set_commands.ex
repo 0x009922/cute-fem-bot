@@ -8,10 +8,10 @@ defmodule CuteFemBot.Logic.Tasks.SetCommands do
     Task.start_link(__MODULE__, :run, [Keyword.fetch!(arg, :deps)])
   end
 
-  def run(%{api: api, config: config}) do
+  def run(%{api: api}) do
     Logger.info("Deletting and setting new commands")
 
-    %CuteFemBot.Config{admins: admins} = CuteFemBot.Config.State.lookup!(config)
+    %CuteFemBot.Config{admins: admins} = CuteFemBot.Config.State.lookup!()
 
     # deleting old commands
     Stream.map(admins, fn id -> {scope_chat(id), nil} end)

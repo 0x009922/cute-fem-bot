@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { SchemaSuggestion, SchemaSuggestionDecision, updateSuggestion } from '../api'
-import { useSuggestionsStore } from '../stores/suggestions'
+import { useParamScope, useTask, wheneverFulfilled, wheneverRejected } from '@vue-kakuyaku/core'
+import { SchemaSuggestion, SchemaSuggestionDecision, makeDecision } from '~/api'
 import SuggestionCardLine from './SuggestionCardLine.vue'
 
 const props = defineProps<{
@@ -9,11 +9,7 @@ const props = defineProps<{
 
 const suggestionsStore = useSuggestionsStore()
 
-const OPTIONS: { label: string; value: SchemaSuggestionDecision }[] = [
-  {
-    label: 'Нет',
-    value: null,
-  },
+const OPTIONS: { label: string; value: SchemaSuggestionDecision | null }[] = [
   {
     label: 'SFW',
     value: 'sfw',
@@ -22,28 +18,48 @@ const OPTIONS: { label: string; value: SchemaSuggestionDecision }[] = [
     label: 'NSFW',
     value: 'nsfw',
   },
+  {
+    label: 'Отклонено',
+    value: 'reject',
+  },
 ]
 
-let decision = $ref<SchemaSuggestionDecision>(props.data.decision)
+const decision = ref<SchemaSuggestionDecision | null>(props.data.decision)
 
-const changes = $computed<boolean>(() => decision !== props.data.decision)
+const scope = useParamScope(
+  computed(() => {
+    const valueInput = decision.value
+    const { decision: valueCurrent, file_id } = props.data
 
-whenever($$(changes), submit)
+    return (
+      valueInput &&
+      valueInput !== valueCurrent && {
+        key: `${file_id} ${valueInput}`,
+        payload: { file_id, decision: valueInput },
+      }
+    )
+  }),
+  ({ file_id, decision }) => {
+    const { state } = useTask(
+      async () => {
+        await makeDecision(file_id, decision)
+      },
+      { immediate: true },
+    )
 
-let applying = $ref(false)
+    wheneverFulfilled(state, () => {
+      suggestionsStore.mutate()
+    })
 
-async function submit() {
-  if (applying) return
+    wheneverRejected(state, (reason) => {
+      console.error(reason)
+    })
 
-  try {
-    applying = true
+    return state
+  },
+)
 
-    await updateSuggestion(props.data.file_id, { decision })
-    suggestionsStore.mutate()
-  } finally {
-    applying = false
-  }
-}
+const isPending = computed(() => scope.value?.expose.pending ?? false)
 </script>
 
 <template>
@@ -54,8 +70,7 @@ async function submit() {
     <template #content>
       <select
         v-model="decision"
-        class="mt-2"
-        :disabled="applying"
+        :disabled="isPending"
       >
         <option
           v-for="opt in OPTIONS"

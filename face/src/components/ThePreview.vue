@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { usePreviewStore } from '../stores/preview'
+import { storeToRefs } from 'pinia'
 
 const store = usePreviewStore()
-
-const file = $computed(() => store.file)
-const type = $computed(() => store.type)
+const { file, type } = storeToRefs(store)
 </script>
 
 <template>

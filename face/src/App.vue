@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import ThePreview from './components/ThePreview.vue'
-import basil from './assets/basil-cut.png'
+import basil from './assets/basil-cut.avif'
 </script>
 
 <template>

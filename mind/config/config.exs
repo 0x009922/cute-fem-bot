@@ -7,6 +7,9 @@ config :cute_fem_bot,
 # Default database
 config :cute_fem_bot, CuteFemBot.Repo, database: "data/main.db", auto_vacuum: :incremental
 
+# Default config path
+config :cute_fem_bot, CuteFemBot.Config, path: "data/config.yaml"
+
 # Time zones
 config :elixir, :time_zone_database, Zoneinfo.TimeZoneDatabase
 
