@@ -1,4 +1,4 @@
-FROM elixir:1.13
+FROM elixir:1.13-slim
 
 WORKDIR /app
 
@@ -11,7 +11,13 @@ COPY mix.exs mix.lock ./
 RUN mix deps.get
 
 COPY config config
-RUN mix deps.compile
+
+# to stop dpkg from trying to interactively configure timezones
+ARG DEBIAN_FRONTEND=noninteractive
+ARG BUILD_DEPS="build-essential erlang-dev"
+RUN apt update && apt install -y $BUILD_DEPS && \
+    mix deps.compile && \
+    apt purge -y $BUILD_DEPS && apt autopurge -y && apt clean
 
 COPY lib lib
 COPY priv priv
