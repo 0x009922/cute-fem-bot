@@ -1,0 +1,7 @@
+services:
+  mind:
+    build: "mind"
+    volumes:
+      - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ./data:/app/data:rw
