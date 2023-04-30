@@ -1,8 +1,8 @@
 # build stage
 FROM node:lts-alpine as build-stage
 WORKDIR /app
-RUN npm i -g pnpm
-COPY pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable
 RUN pnpm fetch
 COPY . .
 RUN pnpm i --offline
