@@ -22,7 +22,7 @@ const data = $computed(() => suggestionsStore.suggestionsMapped!.get(props.fileI
 
 // INTERSECTION
 
-const root = templateRef('root')
+const root = templateRef<null | HTMLDivElement>('root')
 let isVisible = $ref(false)
 
 useIntersectionObserver(root, ([{ isIntersecting }]) => {
@@ -78,14 +78,8 @@ function openPreview() {
 </script>
 
 <template>
-  <div
-    ref="root"
-    class="min-h-100px shadow rounded relative overflow-hidden flex flex-col"
-  >
-    <Spinner
-      v-if="isLoading"
-      class="absolute right-0 top-0 m-2 z-50"
-    />
+  <div ref="root" class="min-h-100px shadow rounded relative overflow-hidden flex flex-col">
+    <Spinner v-if="isLoading" class="absolute right-0 top-0 m-2 z-50" />
 
     <SuggestionPreview
       class="flex-1"
@@ -98,9 +92,7 @@ function openPreview() {
 
     <div class="grid gap-4 p-4 text-sm">
       <SuggestionCardLine>
-        <template #title>
-          Опубликовано?
-        </template>
+        <template #title> Опубликовано? </template>
         <template #content>
           {{ data.published ? 'Да' : 'Нет' }}
         </template>
@@ -109,9 +101,7 @@ function openPreview() {
       <SuggestionActions :data="data" />
 
       <SuggestionCardLine>
-        <template #title>
-          Юзер
-        </template>
+        <template #title> Юзер </template>
         <template #content>
           <slot name="user" />
         </template>
