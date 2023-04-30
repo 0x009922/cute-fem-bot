@@ -6,3 +6,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ./data:/app/data:rw
     restart: "always"
+  face: # TODO: after mind?, check network config
+    build: "face"
+    restart: "always"
