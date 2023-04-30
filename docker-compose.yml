@@ -5,3 +5,4 @@ services:
       - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
       - /etc/localtime:/etc/localtime:ro
       - ./data:/app/data:rw
+    restart: "always"
